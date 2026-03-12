@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Asistencia y Conducta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .hidden { display: none !important; }
+        .table-responsive { max-height: 60vh; overflow-y: auto; }
+        .btn-wa { background-color: #25D366; color: white; }
+        .btn-wa:hover { background-color: #128C7E; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h4 class="text-center mb-4"><i class="fas fa-school"></i> Portal Docente</h4>
+                        <div class="mb-3">
+                            <label class="form-label">Usuario</label>
+                            <input type="text" id="username" class="form-control" placeholder="Ej: jperez">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" id="password" class="form-control">
+                        </div>
+                        <button onclick="iniciarSesion()" class="btn btn-primary w-100" id="btn-login">Ingresar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-section" class="container-fluid mt-3 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 id="welcome-message">Bienvenido</h5>
+            <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-danger">Salir</button>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Filtrar por Grado Actual:</label>
+                <select id="filtro-grado" class="form-select" onchange="renderizarTabla()">
+                    <option value="">Cargando grados...</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button onclick="cargarDatos()" class="btn btn-secondary"><i class="fas fa-sync"></i> Actualizar Lista</button>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-estudiantes">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalReporte" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reportar a <span id="modal-nombre-estudiante"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modal-acudiente">
+                    <input type="hidden" id="modal-telefono">
+                    <div class="mb-3">
+                        <label class="form-label">Falta cometida:</label>
+                        <select id="modal-falta" class="form-select">
+                            <option value="Desorden en clase">Desorden en clase</option>
+                            <option value="No trajo material">No trajo material</option>
+                            <option value="Llamado de atención">Llamado de atención</option>
+                            <option value="Fuga de clase">Fuga de clase</option>
+                            <option value="Llegada tarde">Llegada tarde</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observación adicional:</label>
+                        <textarea id="modal-observacion" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-wa" onclick="enviarWhatsApp()"><i class="fab fa-whatsapp"></i> Enviar y Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // TU URL DE GOOGLE APPS SCRIPT
+        const API_URL = "https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec";
+        
+        let nombreDocenteActual = "";
+        let listaEstudiantes = [];
+
+        // Función central para comunicarse con Google Sheets
+        async function fetchAPI(datos) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Evita errores de CORS
+                    body: JSON.stringify(datos)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión. Verifica tu internet o la URL del script.");
+                return { exito: false };
+            }
+        }
+
+        async function iniciarSesion() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            const btn = document.getElementById("btn-login");
+
+            if(!user || !pass) return alert("Ingresa usuario y contraseña");
+
+            btn.innerText = "Verificando...";
+            btn.disabled = true;
+
+            const res = await fetchAPI({ accion: "login", usuario: user, password: pass });
+
+            if (res.exito) {
+                nombreDocenteActual = res.nombreDocente;
+                document.getElementById("login-section").classList.add("hidden");
+                document.getElementById("dashboard-section").classList.remove("hidden");
+                document.getElementById("welcome-message").innerText = "Profesor(a): " + nombreDocenteActual;
+                cargarDatos();
+            } else {
+                alert(res.mensaje || "Credenciales incorrectas");
+                btn.innerText = "Ingresar";
+                btn.disabled = false;
+            }
+        }
+
+        function cerrarSesion() {
+            document.getElementById("login-section").classList.remove("hidden");
+            document.getElementById("dashboard-section").classList.add("hidden");
+            document.getElementById("username").value = "";
+            document.getElementById("password").value = "";
+            document.getElementById("btn-login").innerText = "Ingresar";
+            document.getElementById("btn-login").disabled = false;
+        }
+
+        async function cargarDatos() {
+            const res = await fetchAPI({ accion: "obtenerEstudiantes" });
+            if (res.exito) {
+                listaEstudiantes = res.datos;
+                llenarFiltroGrados();
+                renderizarTabla();
+            }
+        }
+
+        function llenarFiltroGrados() {
+            const grados = [...new Set(listaEstudiantes.map(e => e.grado_new))].filter(g => g).sort();
+            const select = document.getElementById("filtro-grado");
+            select.innerHTML = '<option value="">Seleccione un grado...</option>';
+            grados.forEach(g => {
+                select.innerHTML += `<option value="${g}">${g}</option>`;
+            });
+        }
+
+        function renderizarTabla() {
+            const gradoSeleccionado = document.getElementById("filtro-grado").value;
+            const tbody = document.getElementById("tabla-estudiantes");
+            tbody.innerHTML = "";
+
+            if (!gradoSeleccionado) return;
+
+            const filtrados = listaEstudiantes.filter(e => e.grado_new == gradoSeleccionado);
+
+            filtrados.forEach((est, index) => {
+                let fila = `<tr>
+                    <td class="align-middle fw-bold" style="font-size: 0.9em;">${est.nombre}</td>`;
+                
+                // Generar los 6 botones de horas de clase
+                for(let i=1; i<=6; i++) {
+                    fila += `<td>
+                        <select class="form-select form-select-sm" onchange="marcarAsistencia('${est.nombre}', '${est.grado_new}', ${i}, this.value)" style="width: 75px; font-size: 0.8em;">
+                            <option value="">-</option>
+                            <option value="Asistió">✓</option>
+                            <option value="Falla">F</option>
+                            <option value="Excusa">E</option>
+                            <option value="Fuga">Fug</option>
+                        </select>
+                    </td>`;
+                }
+
+                fila += `
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="abrirModalReporte('${est.nombre}', '${est.acudiente}', '${est.tel_acud}')">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += fila;
+            });
+        }
+
+        async function marcarAsistencia(nombre, grado, hora, estado) {
+            if(!estado) return; // Si vuelve a seleccionar "-" no hace nada
+            
+            const fechaActual = new Date().toLocaleDateString('es-ES');
+            const datos = { fecha: fechaActual, hora: hora, estudiante: nombre, grado: grado, estado: estado, docente: nombreDocenteActual };
+            
+            // Enviamos al backend en silencio (sin bloquear la interfaz)
+            fetchAPI({ accion: "guardarAsistencia", datos: datos });
+        }
+
+        // --- LÓGICA DE WHATSAPP ---
+        let modalInstancia;
+        function abrirModalReporte(nombre, acudiente, telefono) {
+            document.getElementById("modal-nombre-estudiante").innerText = nombre;
+            document.getElementById("modal-acudiente").value = acudiente;
+            document.getElementById("modal-telefono").value = telefono;
+            document.getElementById("modal-observacion").value = "";
+            
+            modalInstancia = new bootstrap.Modal(document.getElementById('modalReporte'));
+            modalInstancia.show();
+        }
+
+        async function enviarWhatsApp() {
+            const estudiante = document.getElementById("modal-nombre-estudiante").innerText;
+            const acudiente = document.getElementById("modal-acudiente").value || "Padre/Madre";
+            let telefono = document.getElementById("modal-telefono").value;
+            const falta = document.getElementById("modal-falta").value;
+            const obs = document.getElementById("modal-observacion").value;
+            const fecha = new Date().toLocaleDateString('es-ES');
+
+            // 1. Guardar en base de datos
+            const datosReporte = { fecha: fecha, estudiante: estudiante, acudiente: acudiente, telefono: telefono, falta: falta, observacion: obs, docente: nombreDocenteActual };
+            fetchAPI({ accion: "guardarReporte", datos: datosReporte });
+
+            // 2. Construir mensaje personalizado
+            const mensaje = `Estimado(a) *${acudiente}*, se le informa que el estudiante *${estudiante}* presentó un reporte por *${falta}* en la fecha ${fecha}. ${obs ? 'Observación: ' + obs + '. ' : ''}Solicitamos su valioso acompañamiento para cumplir adecuadamente los procesos. De proseguir con varios reportes, se procederá a una citación formal y proceso disciplinario. - Reporte generado por Prof. ${nombreDocenteActual}`;
+
+            // 3. Limpiar teléfono (quitar espacios o guiones)
+            telefono = telefono.replace(/\D/g, ''); 
+            
+            // 4. Redirigir a WhatsApp (Asume que el código de país está en la hoja o añade 57 si es Colombia)
+            // Si tus números no tienen el +57, cámbialo a: const url = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+            
+            window.open(url, '_blank');
+            modalInstancia.hide();
+        }
+    </script>
+</body>
+</html>
