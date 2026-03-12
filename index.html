@@ -1,113 +1,461 @@
-// Función principal para recibir peticiones desde tu página en GitHub
-function doPost(e) {
-  let respuesta = { exito: false, mensaje: "Acción no reconocida" };
-  
-  try {
-    // Parseamos los datos que envía la página web
-    let parametros = JSON.parse(e.postData.contents);
-    let accion = parametros.accion;
-    
-    if (accion === "login") {
-      respuesta = validarUsuario(parametros.usuario, parametros.password);
-    } else if (accion === "obtenerEstudiantes") {
-      respuesta = obtenerEstudiantes();
-    } else if (accion === "guardarAsistencia") {
-      respuesta = guardarAsistencia(parametros.datos);
-    } else if (accion === "guardarReporte") {
-      respuesta = guardarReporte(parametros.datos);
-    } else if (accion === "obtenerEstadisticas") {
-      respuesta = obtenerEstadisticas();
-    }
-  } catch (error) {
-    respuesta = { exito: false, mensaje: "Error en el servidor: " + error.toString() };
-  }
-  
-  // Devolvemos la respuesta en formato JSON
-  return ContentService.createTextOutput(JSON.stringify(respuesta))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control y Análisis de Asistencia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .hidden { display: none !important; }
+        .table-responsive { max-height: 65vh; overflow-y: auto; }
+        .btn-wa { background-color: #25D366; color: white; border: none; }
+        .btn-wa:hover { background-color: #128C7E; color: white; }
+        .nav-link { cursor: pointer; }
+        .stat-card { border-left: 4px solid #0d6efd; }
+        .stat-card.danger { border-left-color: #dc3545; }
+        .stat-card.warning { border-left-color: #ffc107; }
+        /* Fijar encabezados de tabla */
+        thead th { position: sticky; top: 0; z-index: 1; }
+    </style>
+</head>
+<body>
 
-// Para evitar problemas de CORS y permitir pruebas por URL
-function doGet(e) {
-  return ContentService.createTextOutput("La API de asistencia está funcionando correctamente. Usa peticiones POST para interactuar.")
-    .setMimeType(ContentService.MimeType.TEXT);
-}
+    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-chart-line me-2"></i>Portal Docente</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-asistencia" onclick="cambiarVista('asistencia')">Toma de Asistencia</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-estadisticas" onclick="cambiarVista('estadisticas')">Análisis y Estadísticas</a>
+                    </li>
+                </ul>
+                <span class="navbar-text me-3 text-white fw-bold" id="welcome-message"></span>
+                <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            </div>
+        </div>
+    </nav>
 
-// --- FUNCIONES AUXILIARES ---
+    <div id="login-section" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                <div class="card shadow border-0">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-user-shield fa-3x text-primary mb-3"></i>
+                            <h4>Acceso al Sistema</h4>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Usuario</label>
+                            <input type="text" id="username" class="form-control" placeholder="Ingresa tu usuario">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted">Contraseña</label>
+                            <input type="password" id="password" class="form-control" placeholder="••••••••">
+                        </div>
+                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 py-2" id="btn-login">Ingresar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-function validarUsuario(usuario, password) {
-  let hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Usuarios");
-  let datos = hoja.getDataRange().getValues();
-  
-  // Empezamos desde la fila 1 para saltar los encabezados
-  for (let i = 1; i < datos.length; i++) {
-    if (datos[i][0] === usuario && datos[i][1].toString() === password.toString()) {
-      return { exito: true, nombreDocente: datos[i][2] };
-    }
-  }
-  return { exito: false, mensaje: "Usuario o contraseña incorrectos" };
-}
+    <div id="asistencia-section" class="container-fluid mt-4 hidden">
+        <div class="row mb-3 align-items-end bg-white p-3 rounded shadow-sm mx-0">
+            <div class="col-md-4 mb-2 mb-md-0">
+                <label class="form-label fw-bold text-primary mb-2">Modo de Agrupación:</label>
+                <div class="p-2 border rounded bg-light">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroNew" value="grado_new" checked onchange="llenarFiltroGrados()">
+                        <label class="form-check-label" for="filtroNew">Etiqueta Actual</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroOrig" value="grado_orig" onchange="llenarFiltroGrados()">
+                        <label class="form-check-label" for="filtroOrig">Grado Original</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+                <label class="form-label fw-bold">Seleccionar Grupo:</label>
+                <select id="filtro-grado" class="form-select border-primary" onchange="renderizarTabla()">
+                    <option value="">Esperando datos...</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end text-start">
+                <button onclick="cargarDatos()" class="btn btn-secondary" id="btn-actualizar">
+                    <i class="fas fa-sync-alt"></i> Actualizar Lista
+                </button>
+            </div>
+        </div>
 
-function obtenerEstudiantes() {
-  let hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Estudiantes");
-  // getDisplayValues() trae el texto tal cual se ve en la celda, ignorando el formato de fecha interno
-  let datos = hoja.getDataRange().getDisplayValues(); 
-  let estudiantes = [];
-  
-  for (let i = 1; i < datos.length; i++) {
-    estudiantes.push({
-      nombre: datos[i][0],
-      grado_orig: datos[i][1],
-      grado_new: datos[i][2],
-      acudiente: datos[i][3],
-      tel_acud: datos[i][4]
-    });
-  }
-  return { exito: true, datos: estudiantes };
-}
+        <div class="card shadow border-0">
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-striped table-hover mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="min-width: 200px;">Estudiante</th>
+                            <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
+                            <th class="text-center">Reporte</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-estudiantes">
+                        <tr><td colspan="8" class="text-center text-muted py-4">Selecciona un grupo para ver los estudiantes</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-function guardarAsistencia(datosAsistencia) {
-  let hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Asistencia_Log");
-  // Se espera que datosAsistencia sea un array
-  hoja.appendRow([
-    datosAsistencia.fecha, 
-    datosAsistencia.hora, 
-    datosAsistencia.estudiante, 
-    datosAsistencia.grado, 
-    datosAsistencia.estado, 
-    datosAsistencia.docente
-  ]);
-  return { exito: true, mensaje: "Asistencia guardada" };
-}
+    <div id="estadisticas-section" class="container mt-4 hidden">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="m-0 text-primary"><i class="fas fa-chart-bar me-2"></i>Análisis de Asistencia</h3>
+            <button onclick="procesarEstadisticas()" class="btn btn-primary" id="btn-stats">
+                <i class="fas fa-calculator me-2"></i>Calcular Métricas
+            </button>
+        </div>
+        
+        <div class="row mb-4" id="tarjetas-stats">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card shadow-sm stat-card h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Total Registros Analizados</h6>
+                        <h2 id="stat-total-horas" class="m-0 fw-bold">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card shadow-sm stat-card danger h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Alerta Crítica: Más Fugas</h6>
+                        <h4 id="stat-peor-fuga" class="text-danger m-0 fw-bold">-</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm stat-card warning h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Alerta: Más Fallas</h6>
+                        <h4 id="stat-peor-falla" class="text-warning m-0 fw-bold">-</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-function guardarReporte(datosReporte) {
-  let hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Reportes_Conducta");
-  hoja.appendRow([
-    datosReporte.fecha, 
-    datosReporte.estudiante, 
-    datosReporte.acudiente, 
-    datosReporte.telefono, 
-    datosReporte.falta, 
-    datosReporte.observacion, 
-    datosReporte.docente
-  ]);
-  return { exito: true, mensaje: "Reporte guardado con éxito" };
-}
+        <div class="card shadow border-0">
+            <div class="card-header bg-dark text-white fw-bold py-3">
+                <i class="fas fa-table me-2"></i>Desglose Detallado por Estudiante
+            </div>
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-hover mb-0 text-center align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-start ps-4">Estudiante</th>
+                            <th>Grado</th>
+                            <th>Asistencias (✓)</th>
+                            <th>Fallas (F)</th>
+                            <th>Fugas (Fug)</th>
+                            <th>Excusas (E)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-estadisticas">
+                        <tr><td colspan="6" class="text-muted py-4">Haz clic en "Calcular Métricas" para cargar los datos</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-function obtenerEstadisticas() {
-  let hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Asistencia_Log");
-  let datos = hoja.getDataRange().getDisplayValues();
-  let logs = [];
-  
-  // Empezamos en 1 para omitir los encabezados
-  for (let i = 1; i < datos.length; i++) {
-    logs.push({
-      fecha: datos[i][0],
-      hora: datos[i][1],
-      estudiante: datos[i][2],
-      grado: datos[i][3], 
-      estado: datos[i][4]
-    });
-  }
-  return { exito: true, datos: logs };
-}
+    <div class="modal fade" id="modalReporte" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Reporte de Conducta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3 text-muted">Estudiante: <strong class="text-dark" id="modal-nombre-estudiante"></strong></p>
+                    <input type="hidden" id="modal-acudiente">
+                    <input type="hidden" id="modal-telefono">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Clasificación de la falta:</label>
+                        <select id="modal-falta" class="form-select">
+                            <option value="Desorden en clase">Desorden en clase</option>
+                            <option value="No trajo material">No trajo material</option>
+                            <option value="Llamados de atención">Llamados de atención</option>
+                            <option value="Fuga de clase">Fuga de clase</option>
+                            <option value="Llegada tarde">Llegada tarde</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observación detallada:</label>
+                        <textarea id="modal-observacion" class="form-control" rows="3" placeholder="Describe brevemente lo sucedido..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-wa px-4" onclick="enviarWhatsApp()">
+                        <i class="fab fa-whatsapp me-2"></i>Notificar al Acudiente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // URL DE TU BACKEND (APPS SCRIPT)
+        const API_URL = "https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec";
+        
+        let nombreDocenteActual = "";
+        let listaEstudiantes = [];
+
+        async function fetchAPI(datos) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(datos)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión con la base de datos.");
+                return { exito: false };
+            }
+        }
+
+        async function iniciarSesion() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+            const btn = document.getElementById("btn-login");
+
+            if(!user || !pass) return alert("Por favor, ingresa tus credenciales.");
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Autenticando...';
+            btn.disabled = true;
+
+            const res = await fetchAPI({ accion: "login", usuario: user, password: pass });
+
+            if (res.exito) {
+                nombreDocenteActual = res.nombreDocente;
+                document.getElementById("login-section").classList.add("hidden");
+                document.getElementById("main-nav").classList.remove("hidden");
+                document.getElementById("welcome-message").innerText = "Prof. " + nombreDocenteActual;
+                cambiarVista('asistencia');
+                cargarDatos();
+            } else {
+                alert(res.mensaje);
+                btn.innerText = "Ingresar";
+                btn.disabled = false;
+            }
+        }
+
+        function cerrarSesion() {
+            location.reload(); 
+        }
+
+        function cambiarVista(vista) {
+            document.getElementById('asistencia-section').classList.add('hidden');
+            document.getElementById('estadisticas-section').classList.add('hidden');
+            document.getElementById('tab-asistencia').classList.remove('active');
+            document.getElementById('tab-estadisticas').classList.remove('active');
+
+            document.getElementById(`${vista}-section`).classList.remove('hidden');
+            document.getElementById(`tab-${vista}`).classList.add('active');
+        }
+
+        async function cargarDatos() {
+            const btn = document.getElementById("btn-actualizar");
+            const textoOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+            btn.disabled = true;
+
+            const res = await fetchAPI({ accion: "obtenerEstudiantes" });
+            if (res.exito) {
+                listaEstudiantes = res.datos;
+                llenarFiltroGrados();
+                renderizarTabla();
+            }
+            
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+
+        function obtenerTipoFiltro() {
+            return document.querySelector('input[name="tipoFiltro"]:checked').value;
+        }
+
+        function llenarFiltroGrados() {
+            const propiedadFiltro = obtenerTipoFiltro();
+            const grados = [...new Set(listaEstudiantes.map(e => e[propiedadFiltro]))].filter(g => g).sort();
+            
+            const select = document.getElementById("filtro-grado");
+            select.innerHTML = '<option value="">Seleccione un grupo...</option>';
+            grados.forEach(g => {
+                select.innerHTML += `<option value="${g}">${g}</option>`;
+            });
+            renderizarTabla();
+        }
+
+        function renderizarTabla() {
+            const propiedadFiltro = obtenerTipoFiltro();
+            const gradoSeleccionado = document.getElementById("filtro-grado").value;
+            const tbody = document.getElementById("tabla-estudiantes");
+            
+            if (!gradoSeleccionado) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Selecciona un grupo para ver los estudiantes</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = "";
+            const filtrados = listaEstudiantes.filter(e => e[propiedadFiltro] == gradoSeleccionado);
+
+            filtrados.forEach((est) => {
+                let fila = `<tr>
+                    <td class="fw-bold text-secondary" style="font-size: 0.9em;">${est.nombre}</td>`;
+                
+                // Horas con "Asistió" (✓) por defecto
+                for(let i=1; i<=6; i++) {
+                    fila += `<td>
+                        <select class="form-select form-select-sm shadow-none" onchange="marcarAsistencia('${est.nombre}', '${est.grado_new}', ${i}, this.value)" style="min-width: 65px; font-size: 0.85rem;">
+                            <option value="Asistió" selected>✓</option>
+                            <option value="Falla">F</option>
+                            <option value="Excusa">E</option>
+                            <option value="Fuga">Fug</option>
+                            <option value="">-</option>
+                        </select>
+                    </td>`;
+                }
+
+                fila += `
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-warning" title="Reportar" onclick="abrirModalReporte('${est.nombre}', '${est.acudiente}', '${est.tel_acud}')">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += fila;
+            });
+        }
+
+        function marcarAsistencia(nombre, grado, hora, estado) {
+            if(!estado) return;
+            const fechaActual = new Date().toLocaleDateString('es-ES');
+            const datos = { fecha: fechaActual, hora: hora, estudiante: nombre, grado: grado, estado: estado, docente: nombreDocenteActual };
+            // Se envía en background
+            fetchAPI({ accion: "guardarAsistencia", datos: datos }); 
+        }
+
+        // --- MÓDULO ESTADÍSTICAS ---
+        async function procesarEstadisticas() {
+            const btn = document.getElementById("btn-stats");
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+            btn.disabled = true;
+            
+            const res = await fetchAPI({ accion: "obtenerEstadisticas" });
+            
+            if (res.exito) {
+                const logs = res.datos;
+                document.getElementById('stat-total-horas').innerText = logs.length;
+
+                let statsEstudiantes = {};
+                
+                logs.forEach(log => {
+                    if (!statsEstudiantes[log.estudiante]) {
+                        statsEstudiantes[log.estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, grado: log.grado };
+                    }
+                    if (log.estado === "Asistió") statsEstudiantes[log.estudiante].asistencias++;
+                    if (log.estado === "Falla") statsEstudiantes[log.estudiante].fallas++;
+                    if (log.estado === "Fuga") statsEstudiantes[log.estudiante].fugas++;
+                    if (log.estado === "Excusa") statsEstudiantes[log.estudiante].excusas++;
+                });
+
+                let maxFugas = 0; let estudiantePeorFuga = "N/A";
+                let maxFallas = 0; let estudiantePeorFalla = "N/A";
+
+                const tbody = document.getElementById("tabla-estadisticas");
+                tbody.innerHTML = "";
+
+                Object.entries(statsEstudiantes).forEach(([nombre, stats]) => {
+                    if (stats.fugas > maxFugas) { maxFugas = stats.fugas; estudiantePeorFuga = nombre; }
+                    if (stats.fallas > maxFallas) { maxFallas = stats.fallas; estudiantePeorFalla = nombre; }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="text-start ps-4 fw-bold text-secondary">${nombre}</td>
+                            <td><span class="badge bg-light text-dark border">${stats.grado}</span></td>
+                            <td class="text-success fw-bold">${stats.asistencias}</td>
+                            <td class="${stats.fallas > 0 ? 'text-warning fw-bold' : ''}">${stats.fallas}</td>
+                            <td class="${stats.fugas > 0 ? 'text-danger fw-bold' : ''}">${stats.fugas}</td>
+                            <td class="text-secondary">${stats.excusas}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('stat-peor-fuga').innerText = maxFugas > 0 ? `${estudiantePeorFuga} (${maxFugas})` : "Sin fugas detectadas";
+                document.getElementById('stat-peor-falla').innerText = maxFallas > 0 ? `${estudiantePeorFalla} (${maxFallas})` : "Sin fallas registradas";
+            }
+            
+            btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Actualizar Datos';
+            btn.disabled = false;
+        }
+
+        // --- LÓGICA DE WHATSAPP ---
+        let modalInstancia;
+        function abrirModalReporte(nombre, acudiente, telefono) {
+            document.getElementById("modal-nombre-estudiante").innerText = nombre;
+            document.getElementById("modal-acudiente").value = acudiente || "Padre/Madre";
+            document.getElementById("modal-telefono").value = telefono || "";
+            document.getElementById("modal-observacion").value = "";
+            
+            if(!modalInstancia) {
+                modalInstancia = new bootstrap.Modal(document.getElementById('modalReporte'));
+            }
+            modalInstancia.show();
+        }
+
+        async function enviarWhatsApp() {
+            const estudiante = document.getElementById("modal-nombre-estudiante").innerText;
+            const acudiente = document.getElementById("modal-acudiente").value;
+            let telefono = document.getElementById("modal-telefono").value;
+            const falta = document.getElementById("modal-falta").value;
+            const obs = document.getElementById("modal-observacion").value;
+            const fecha = new Date().toLocaleDateString('es-ES');
+
+            if(!telefono) {
+                alert("Este estudiante no tiene un teléfono registrado en la base de datos.");
+                return;
+            }
+
+            // Guardar el reporte en el backend silenciosamente
+            const datosReporte = { fecha: fecha, estudiante: estudiante, acudiente: acudiente, telefono: telefono, falta: falta, observacion: obs, docente: nombreDocenteActual };
+            fetchAPI({ accion: "guardarReporte", datos: datosReporte });
+
+            // Mensaje personalizado
+            const mensaje = `Estimado(a) *${acudiente}*, se le informa que el estudiante *${estudiante}* presentó un reporte por *${falta}* en la fecha ${fecha}. ${obs ? 'Observación: ' + obs + '. ' : ''}Solicitamos su valioso acompañamiento para cumplir adecuadamente los procesos. De proseguir con varios reportes, se procederá a una citación formal y proceso disciplinario. - Reporte generado por Prof. ${nombreDocenteActual}`;
+
+            // Limpiar el teléfono de espacios o guiones y agregar el código de Colombia (57) por defecto
+            telefono = telefono.toString().replace(/\D/g, ''); 
+            
+            // Si el número en la hoja ya trae el 57, evitamos duplicarlo
+            if (!telefono.startsWith('57') && telefono.length <= 10) {
+                telefono = '57' + telefono;
+            }
+
+            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+            
+            window.open(url, '_blank');
+            modalInstancia.hide();
+        }
+    </script>
+</body>
+</html>
