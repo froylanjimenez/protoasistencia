@@ -229,8 +229,7 @@
                 return await response.json();
             } catch (error) {
                 console.error(error);
-                alert("Error de conexión con la base de datos.");
-                return { exito: false };
+                throw new Error("Error de red o CORS al conectar con Apps Script.");
             }
         }
 
@@ -244,17 +243,22 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Autenticando...';
             btn.disabled = true;
 
-            const res = await fetchAPI({ accion: "login", usuario: user, password: pass });
+            try {
+                const res = await fetchAPI({ accion: "login", usuario: user, password: pass });
 
-            if (res.exito) {
-                nombreDocenteActual = res.nombreDocente;
-                document.getElementById("login-section").classList.add("hidden");
-                document.getElementById("main-nav").classList.remove("hidden");
-                document.getElementById("welcome-message").innerText = "Prof. " + nombreDocenteActual;
-                cambiarVista('asistencia');
-                cargarDatos();
-            } else {
-                alert(res.mensaje);
+                if (res.exito) {
+                    nombreDocenteActual = res.nombreDocente;
+                    document.getElementById("login-section").classList.add("hidden");
+                    document.getElementById("main-nav").classList.remove("hidden");
+                    document.getElementById("welcome-message").innerText = "Prof. " + nombreDocenteActual;
+                    cambiarVista('asistencia');
+                    cargarDatos();
+                } else {
+                    alert(res.mensaje || "Credenciales incorrectas");
+                }
+            } catch (error) {
+                alert(error.message);
+            } finally {
                 btn.innerText = "Ingresar";
                 btn.disabled = false;
             }
@@ -280,15 +284,21 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
             btn.disabled = true;
 
-            const res = await fetchAPI({ accion: "obtenerEstudiantes" });
-            if (res.exito) {
-                listaEstudiantes = res.datos;
-                llenarFiltroGrados();
-                renderizarTabla();
+            try {
+                const res = await fetchAPI({ accion: "obtenerEstudiantes" });
+                if (res.exito) {
+                    listaEstudiantes = res.datos;
+                    llenarFiltroGrados();
+                    renderizarTabla();
+                } else {
+                    alert("Error al obtener estudiantes: " + res.mensaje);
+                }
+            } catch (error) {
+                alert("Hubo un error cargando los datos.");
+            } finally {
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
             }
-            
-            btn.innerHTML = textoOriginal;
-            btn.disabled = false;
         }
 
         function obtenerTipoFiltro() {
@@ -324,7 +334,6 @@
                 let fila = `<tr>
                     <td class="fw-bold text-secondary" style="font-size: 0.9em;">${est.nombre}</td>`;
                 
-                // Horas con "Asistió" (✓) por defecto
                 for(let i=1; i<=6; i++) {
                     fila += `<td>
                         <select class="form-select form-select-sm shadow-none" onchange="marcarAsistencia('${est.nombre}', '${est.grado_new}', ${i}, this.value)" style="min-width: 65px; font-size: 0.85rem;">
@@ -352,81 +361,87 @@
             if(!estado) return;
             const fechaActual = new Date().toLocaleDateString('es-ES');
             const datos = { fecha: fechaActual, hora: hora, estudiante: nombre, grado: grado, estado: estado, docente: nombreDocenteActual };
-            // Se envía en background
             fetchAPI({ accion: "guardarAsistencia", datos: datos }); 
         }
 
-        // --- MÓDULO ESTADÍSTICAS CORREGIDO ---
+        // --- MÓDULO ESTADÍSTICAS A PRUEBA DE FALLOS ---
         async function procesarEstadisticas() {
             const btn = document.getElementById("btn-stats");
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
-            btn.disabled = true;
             
-            const res = await fetchAPI({ accion: "obtenerEstadisticas" });
-            
-            if (res.exito) {
-                // Recuperar ambas listas del backend
-                const logsAsistencia = res.datosAsistencia || [];
-                const logsReportes = res.datosReportes || [];
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+                btn.disabled = true;
                 
-                document.getElementById('stat-total-horas').innerText = logsAsistencia.length;
-
-                let statsEstudiantes = {};
+                const res = await fetchAPI({ accion: "obtenerEstadisticas" });
                 
-                // 1. Contar desde la tabla de asistencia normal
-                logsAsistencia.forEach(log => {
-                    if (!statsEstudiantes[log.estudiante]) {
-                        statsEstudiantes[log.estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: log.grado };
-                    }
-                    if (log.estado === "Asistió") statsEstudiantes[log.estudiante].asistencias++;
-                    if (log.estado === "Falla") statsEstudiantes[log.estudiante].fallas++;
-                    if (log.estado === "Fuga") statsEstudiantes[log.estudiante].fugas++;
-                    if (log.estado === "Excusa") statsEstudiantes[log.estudiante].excusas++;
-                });
-
-                // 2. Contar desde la tabla de reportes de WhatsApp
-                logsReportes.forEach(rep => {
-                    if (!statsEstudiantes[rep.estudiante]) {
-                        statsEstudiantes[rep.estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: "N/A" };
-                    }
-                    statsEstudiantes[rep.estudiante].reportes++; // Sumar al contador de alertas
+                if (res.exito) {
+                    const logsAsistencia = res.datosAsistencia || [];
+                    const logsReportes = res.datosReportes || [];
                     
-                    if (rep.falta === "Fuga de clase") {
-                        statsEstudiantes[rep.estudiante].fugas++; // Sumar a las fugas totales
-                    }
-                });
+                    document.getElementById('stat-total-horas').innerText = logsAsistencia.length;
 
-                let maxFugas = 0; let estudiantePeorFuga = "N/A";
-                let maxFallas = 0; let estudiantePeorFalla = "N/A";
+                    let statsEstudiantes = {};
+                    
+                    // Contar desde la tabla de asistencia normal
+                    logsAsistencia.forEach(log => {
+                        let estudiante = log.estudiante || "Desconocido";
+                        if (!statsEstudiantes[estudiante]) {
+                            statsEstudiantes[estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: log.grado || "N/A" };
+                        }
+                        if (log.estado === "Asistió") statsEstudiantes[estudiante].asistencias++;
+                        if (log.estado === "Falla") statsEstudiantes[estudiante].fallas++;
+                        if (log.estado === "Fuga") statsEstudiantes[estudiante].fugas++;
+                        if (log.estado === "Excusa") statsEstudiantes[estudiante].excusas++;
+                    });
 
-                const tbody = document.getElementById("tabla-estadisticas");
-                tbody.innerHTML = "";
+                    // Contar desde la tabla de reportes de WhatsApp
+                    logsReportes.forEach(rep => {
+                        let estudiante = rep.estudiante || "Desconocido";
+                        if (!statsEstudiantes[estudiante]) {
+                            statsEstudiantes[estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: "N/A" };
+                        }
+                        statsEstudiantes[estudiante].reportes++; 
+                        if (rep.falta === "Fuga de clase") {
+                            statsEstudiantes[estudiante].fugas++; 
+                        }
+                    });
 
-                Object.entries(statsEstudiantes).forEach(([nombre, stats]) => {
-                    if (stats.fugas > maxFugas) { maxFugas = stats.fugas; estudiantePeorFuga = nombre; }
-                    if (stats.fallas > maxFallas) { maxFallas = stats.fallas; estudiantePeorFalla = nombre; }
+                    let maxFugas = 0; let estudiantePeorFuga = "N/A";
+                    let maxFallas = 0; let estudiantePeorFalla = "N/A";
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="text-start ps-4 fw-bold text-secondary">${nombre}</td>
-                            <td><span class="badge bg-light text-dark border">${stats.grado}</span></td>
-                            <td class="text-success fw-bold">${stats.asistencias}</td>
-                            <td class="${stats.fallas > 0 ? 'text-warning fw-bold' : ''}">${stats.fallas}</td>
-                            <td class="${stats.fugas > 0 ? 'text-danger fw-bold' : ''}">${stats.fugas}</td>
-                            <td class="text-secondary">${stats.excusas}</td>
-                            <td><span class="badge ${stats.reportes > 0 ? 'bg-danger' : 'bg-success'}">${stats.reportes}</span></td>
-                        </tr>
-                    `;
-                });
+                    const tbody = document.getElementById("tabla-estadisticas");
+                    tbody.innerHTML = "";
 
-                document.getElementById('stat-peor-fuga').innerText = maxFugas > 0 ? `${estudiantePeorFuga} (${maxFugas})` : "Sin fugas detectadas";
-                document.getElementById('stat-peor-falla').innerText = maxFallas > 0 ? `${estudiantePeorFalla} (${maxFallas})` : "Sin fallas registradas";
-            } else {
-                alert("Error al obtener estadísticas. Asegúrate de haber actualizado el Apps Script.");
+                    Object.entries(statsEstudiantes).forEach(([nombre, stats]) => {
+                        if (stats.fugas > maxFugas) { maxFugas = stats.fugas; estudiantePeorFuga = nombre; }
+                        if (stats.fallas > maxFallas) { maxFallas = stats.fallas; estudiantePeorFalla = nombre; }
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td class="text-start ps-4 fw-bold text-secondary">${nombre}</td>
+                                <td><span class="badge bg-light text-dark border">${stats.grado}</span></td>
+                                <td class="text-success fw-bold">${stats.asistencias}</td>
+                                <td class="${stats.fallas > 0 ? 'text-warning fw-bold' : ''}">${stats.fallas}</td>
+                                <td class="${stats.fugas > 0 ? 'text-danger fw-bold' : ''}">${stats.fugas}</td>
+                                <td class="text-secondary">${stats.excusas}</td>
+                                <td><span class="badge ${stats.reportes > 0 ? 'bg-danger' : 'bg-success'}">${stats.reportes}</span></td>
+                            </tr>
+                        `;
+                    });
+
+                    document.getElementById('stat-peor-fuga').innerText = maxFugas > 0 ? `${estudiantePeorFuga} (${maxFugas})` : "Sin fugas detectadas";
+                    document.getElementById('stat-peor-falla').innerText = maxFallas > 0 ? `${estudiantePeorFalla} (${maxFallas})` : "Sin fallas registradas";
+                } else {
+                    // Si el Apps Script falló o no reconoce la acción
+                    alert("Aviso: El servidor respondió con un error. (" + (res.mensaje || "Desconocido") + "). Asegúrate de haber desplegado la 'Nueva versión' en Google Apps Script.");
+                }
+            } catch (error) {
+                alert("Hubo un error técnico procesando los datos: " + error.message);
+            } finally {
+                // El botón siempre vuelve a su estado normal
+                btn.innerHTML = '<i class="fas fa-calculator me-2"></i>Calcular Métricas';
+                btn.disabled = false;
             }
-            
-            btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Actualizar Datos';
-            btn.disabled = false;
         }
 
         // --- LÓGICA DE WHATSAPP ---
@@ -456,17 +471,13 @@
                 return;
             }
 
-            // Guardar el reporte en el backend silenciosamente
             const datosReporte = { fecha: fecha, estudiante: estudiante, acudiente: acudiente, telefono: telefono, falta: falta, observacion: obs, docente: nombreDocenteActual };
             fetchAPI({ accion: "guardarReporte", datos: datosReporte });
 
-            // Mensaje personalizado
             const mensaje = `Estimado(a) *${acudiente}*, se le informa que el estudiante *${estudiante}* presentó un reporte por *${falta}* en la fecha ${fecha}. ${obs ? 'Observación: ' + obs + '. ' : ''}Solicitamos su valioso acompañamiento para cumplir adecuadamente los procesos. De proseguir con varios reportes, se procederá a una citación formal y proceso disciplinario. - Reporte generado por Prof. ${nombreDocenteActual}`;
 
-            // Limpiar el teléfono de espacios o guiones
             telefono = telefono.toString().replace(/\D/g, ''); 
             
-            // Si el número en la hoja ya trae el 57, evitamos duplicarlo (lógica para Colombia)
             if (!telefono.startsWith('57') && telefono.length <= 10) {
                 telefono = '57' + telefono;
             }
