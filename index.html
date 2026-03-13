@@ -720,16 +720,16 @@ body {
    PDF / ACTA
    ============================================================ */
 #actaContainer {
-  position: fixed;
+  position: absolute;
   left: -9999px;
   top: 0;
-  visibility: hidden;
   background: #fff;
   color: #111;
-  padding: 2rem;
+  padding: 2.5rem;
   font-family: 'Times New Roman', serif;
   font-size: 12pt;
-  width: 700px;
+  width: 794px;
+  z-index: -1;
 }
 
 #actaContainer h2 {
@@ -841,8 +841,8 @@ body {
       <button class="nav-tab-btn" id="tabPsicologia" onclick="switchTab('psicologia')">
         <i class="bi bi-heart-pulse"></i><span>Psicología</span>
       </button>
-      <button class="nav-tab-btn hidden" id="tabNovedades" onclick="switchTab('novedades')">
-        <i class="bi bi-bell"></i><span>Novedades</span>
+      <button class="nav-tab-btn hidden" id="tabAdmin" onclick="switchTab('admin')">
+        <i class="bi bi-shield-lock"></i><span>Admin</span>
       </button>
     </div>
 
@@ -1008,62 +1008,113 @@ body {
       </div>
     </div>
 
-    <!-- ========== NOVEDADES (Admin) ========== -->
-    <div id="novedadesTab" class="tab-content" style="display:none">
-      <div class="row g-3">
+    <!-- ========== ADMIN ========== -->
+    <div id="adminTab" class="tab-content" style="display:none">
 
-        <div class="col-lg-4">
-          <div class="cesum-card">
-            <div class="cesum-card-header">
-              <h5><i class="bi bi-plus-circle"></i> Nueva Novedad</h5>
+      <!-- Sub-tabs Admin -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:.75rem;flex-wrap:wrap">
+        <button class="nav-tab-btn active" id="subTabNovedades" onclick="switchAdminTab('novedades')">
+          <i class="bi bi-bell"></i> Novedades
+        </button>
+        <button class="nav-tab-btn" id="subTabSeguimiento" onclick="switchAdminTab('seguimiento')">
+          <i class="bi bi-clipboard2-pulse"></i> Seguimiento de Citas
+        </button>
+      </div>
+
+      <!-- Sub-panel: Novedades -->
+      <div id="adminNovedadesPanel">
+        <div class="row g-3">
+          <div class="col-lg-4">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-plus-circle"></i> Nueva Novedad</h5>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Estudiante</label>
+                <select id="novEstudiante" class="form-select">
+                  <option value="">-- Seleccionar --</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Inicio</label>
+                <input type="date" id="novInicio" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Fin</label>
+                <input type="date" id="novFin" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select id="novEstado" class="form-select">
+                  <option value="Activa">Activa</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Inactiva">Inactiva</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Motivo</label>
+                <textarea id="novMotivo" class="form-control" rows="3" placeholder="Descripción..."></textarea>
+              </div>
+              <button class="btn-cesum btn-cesum-primary w-100" onclick="guardarNovedad()">
+                <i class="bi bi-save"></i> Guardar Novedad
+              </button>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Estudiante</label>
-              <select id="novEstudiante" class="form-select">
-                <option value="">-- Seleccionar --</option>
-              </select>
+          </div>
+          <div class="col-lg-8">
+            <div class="cesum-card">
+              <div class="cesum-card-header">
+                <h5><i class="bi bi-bell-fill"></i> Novedades Registradas</h5>
+                <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades()">
+                  <i class="bi bi-arrow-clockwise"></i> Refrescar
+                </button>
+              </div>
+              <div id="novedadesLista">
+                <p style="color:var(--text-2);font-size:.85rem">Cargando...</p>
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Inicio</label>
-              <input type="date" id="novInicio" class="form-control">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Fin</label>
-              <input type="date" id="novFin" class="form-control">
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Estado</label>
-              <select id="novEstado" class="form-select">
-                <option value="Activa">Activa</option>
-                <option value="Pendiente">Pendiente</option>
-                <option value="Inactiva">Inactiva</option>
-              </select>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Motivo</label>
-              <textarea id="novMotivo" class="form-control" rows="3" placeholder="Descripción..."></textarea>
-            </div>
-            <button class="btn-cesum btn-cesum-primary w-100" onclick="guardarNovedad()">
-              <i class="bi bi-save"></i> Guardar Novedad
-            </button>
           </div>
         </div>
+      </div>
 
-        <div class="col-lg-8">
-          <div class="cesum-card">
-            <div class="cesum-card-header">
-              <h5><i class="bi bi-bell-fill"></i> Novedades Registradas</h5>
-              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades()">
+      <!-- Sub-panel: Seguimiento de Citas -->
+      <div id="adminSeguimientoPanel" style="display:none">
+        <div class="cesum-card">
+          <div class="cesum-card-header">
+            <h5><i class="bi bi-clipboard2-pulse-fill"></i> Seguimiento de Citas y Compromisos</h5>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <select id="filtroEstadoCita" class="form-select" style="width:auto;font-size:.82rem" onchange="filtrarSeguimiento()">
+                <option value="">Todos los estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Completada">Completada</option>
+              </select>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarSeguimiento()">
                 <i class="bi bi-arrow-clockwise"></i> Refrescar
               </button>
             </div>
-            <div id="novedadesLista">
-              <p style="color:var(--text-2);font-size:.85rem">Cargando...</p>
-            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="stat-table" id="seguimientoTable">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Estudiante</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th style="text-align:left">Motivo</th>
+                  <th>Acudiente</th>
+                  <th>Estado</th>
+                  <th style="text-align:left">Informe</th>
+                  <th style="text-align:left">Compromisos</th>
+                  <th>Docente</th>
+                </tr>
+              </thead>
+              <tbody id="seguimientoBody">
+                <tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Cargando...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
-
       </div>
+
     </div>
 
   </div><!-- /main-content -->
@@ -1175,13 +1226,62 @@ body {
 <!-- Acta PDF (oculta, solo para html2pdf) -->
 <div id="actaContainer"></div>
 
+<!-- ============================================================
+     MODAL: EDITAR NOVEDAD (Admin)
+     ============================================================ -->
+<div class="modal fade modal-cesum" id="modalEditarNovedad" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2" style="color:var(--accent-lt)"></i>Editar Novedad</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="editNovIdx">
+        <div class="mb-3">
+          <label class="form-label">Estudiante</label>
+          <input type="text" id="editNovEstudiante" class="form-control" readonly>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label">Fecha Inicio</label>
+            <input type="date" id="editNovInicio" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Fecha Fin</label>
+            <input type="date" id="editNovFin" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Estado</label>
+          <select id="editNovEstado" class="form-select">
+            <option value="Activa">Activa</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Inactiva">Inactiva</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Motivo</label>
+          <textarea id="editNovMotivo" class="form-control" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-primary" onclick="guardarEdicionNovedad()">
+          <i class="bi bi-save"></i> Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // ============================================================
 // CONFIGURACIÓN
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxXumkFy6ybIBCFzzXcCIKfWY81RhppD3edyg2E2NJ9fSpiiaaSA-QcvpRpyp2i_8f4/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyREYM0EN-tsFuBCJ4L5NgEoJuvgcaJOtsvmzx0dajxn6YImx6cxnELmKAQOBU7b6Ab/exec';
 
 // ============================================================
 // ESTADO GLOBAL
@@ -1192,7 +1292,8 @@ const state = {
   isAdmin: false,
   estudiantes: [],
   citasHoy: [],
-  novedadesActivas: []  // estudiantes con novedad activa (excusa)
+  novedadesActivas: [],  // estudiantes con novedad activa (excusa)
+  todasNovedades: []        // para edición en panel admin
 };
 
 // ============================================================
@@ -1270,7 +1371,7 @@ async function handleLogin() {
 
     // Mostrar menú Admin si aplica
     if (state.isAdmin) {
-      document.getElementById('tabNovedades').classList.remove('hidden');
+      document.getElementById('tabAdmin').classList.remove('hidden');
     }
 
     showScreen('appScreen');
@@ -1290,7 +1391,7 @@ function handleLogout() {
   state.isAdmin = false;
   document.getElementById('loginUsuario').value = '';
   document.getElementById('loginPassword').value = '';
-  document.getElementById('tabNovedades').classList.add('hidden');
+  document.getElementById('tabAdmin').classList.add('hidden');
   showScreen('loginScreen');
   switchTab('asistencia');
 }
@@ -1382,16 +1483,24 @@ function poblarSelectGrados() {
 // ============================================================
 
 function switchTab(tab) {
-  ['asistencia', 'estadisticas', 'psicologia', 'novedades'].forEach(t => {
-    const content = document.getElementById(`${t}Tab`);
-    const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
-    if (content) content.style.display = t === tab ? 'block' : 'none';
+  ['asistencia', 'estadisticas', 'psicologia', 'admin'].forEach(t => {
+    const el = document.getElementById(t + 'Tab');
+    const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el)  el.style.display  = t === tab ? 'block' : 'none';
     if (btn) btn.classList.toggle('active', t === tab);
   });
 
   if (tab === 'estadisticas') cargarEstadisticas();
-  if (tab === 'psicologia') cargarCitasPendientes();
-  if (tab === 'novedades') cargarNovedades();
+  if (tab === 'psicologia')   cargarCitasPendientes();
+  if (tab === 'admin')        { cargarNovedades(); switchAdminTab('novedades'); }
+}
+
+function switchAdminTab(sub) {
+  document.getElementById('adminNovedadesPanel').style.display  = sub === 'novedades'   ? 'block' : 'none';
+  document.getElementById('adminSeguimientoPanel').style.display = sub === 'seguimiento' ? 'block' : 'none';
+  document.getElementById('subTabNovedades').classList.toggle('active',   sub === 'novedades');
+  document.getElementById('subTabSeguimiento').classList.toggle('active', sub === 'seguimiento');
+  if (sub === 'seguimiento') cargarSeguimiento();
 }
 
 // ============================================================
@@ -1841,73 +1950,127 @@ async function completarCita() {
 // ============================================================
 
 function generarActa() {
-  const estudiante  = document.getElementById('descargosEst').value;
-  const fecha       = document.getElementById('descargosFecha').value;
-  const hora        = document.getElementById('descargosHora').value;
+  const estudiante     = document.getElementById('descargosEst').value;
+  const fecha          = document.getElementById('descargosFecha').value;
+  const hora           = document.getElementById('descargosHora').value;
   const acudiente_asiste = document.getElementById('descargosAcudiente').value;
-  const informe     = document.getElementById('descargosInforme').value;
-  const compromisos = document.getElementById('descargosCompromisos').value;
+  const informe        = document.getElementById('descargosInforme').value;
+  const compromisos    = document.getElementById('descargosCompromisos').value;
 
-  // Buscar nombre del acudiente
+  if (!estudiante) { showToast('No hay datos de cita para generar el acta.', 'warning'); return; }
+
   const est = state.estudiantes.find(e => e.nombre === estudiante) || {};
   const hoy = new Date();
-  const fechaLarga = hoy.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const fechaLarga = hoy.toLocaleDateString('es-CO', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const informeHtml    = informe    ? informe.replace(/\n/g, '<br>') : '(Sin informe registrado)';
+  const compromisosHtml= compromisos? compromisos.replace(/\n/g, '<br>') : '(Sin compromisos registrados)';
 
   const actaHTML = `
-    <h2>Concentración Educativa del Sur de Montelíbano</h2>
-    <div class="acta-subtitulo">ACTA DE ORIENTACIÓN / COORDINACIÓN</div>
-    <div class="acta-datos">
-      <p><strong>Fecha:</strong> ${fechaLarga}</p>
-      <p><strong>Estudiante:</strong> ${estudiante}</p>
-      <p><strong>Acudiente:</strong> ${est.acudiente || '–'}</p>
-      <p><strong>Hora de cita:</strong> ${hora}</p>
-      <p><strong>Fecha de cita:</strong> ${fecha}</p>
-      <p><strong>Acudiente presente:</strong> ${acudiente_asiste}</p>
-      <p><strong>Docente/Orientador:</strong> ${state.nombre}</p>
+    <div style="text-align:center;margin-bottom:1rem">
+      <div style="font-size:22pt;font-weight:bold;text-transform:uppercase;letter-spacing:1px">
+        Concentración Educativa del Sur de Montelíbano
+      </div>
+      <div style="font-size:12pt;margin-top:4px">NIT: &nbsp; | &nbsp; Montelíbano, Córdoba</div>
+      <hr style="border:2px solid #111;margin:10px 0 4px">
+      <div style="font-size:14pt;font-weight:bold;text-transform:uppercase;letter-spacing:2px">
+        Acta de Orientación / Coordinación
+      </div>
+      <hr style="border:1px solid #111;margin:4px 0 16px">
     </div>
-    <hr>
-    <p><strong>INFORME / DIAGNÓSTICO:</strong></p>
-    <p style="margin:1rem 0;text-align:justify">${informe.replace(/\n/g, '<br>')}</p>
-    <hr>
-    <p><strong>COMPROMISOS ADQUIRIDOS:</strong></p>
-    <p style="margin:1rem 0;text-align:justify">${compromisos.replace(/\n/g, '<br>')}</p>
-    <div class="acta-firmas">
-      <div class="firma-linea">
-        <p><strong>${state.nombre}</strong></p>
-        <p>Docente / Orientador</p>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:11pt">
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ccc;width:35%"><strong>Fecha del acta:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${fechaLarga}</td>
+        <td style="padding:4px 8px;border:1px solid #ccc;width:20%"><strong>Hora cita:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${hora}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ccc"><strong>Estudiante:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${estudiante}</td>
+        <td style="padding:4px 8px;border:1px solid #ccc"><strong>Fecha cita:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${fecha}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ccc"><strong>Acudiente:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${est.acudiente || '–'}</td>
+        <td style="padding:4px 8px;border:1px solid #ccc"><strong>Acudiente presente:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc">${acudiente_asiste}</td>
+      </tr>
+      <tr>
+        <td style="padding:4px 8px;border:1px solid #ccc"><strong>Docente/Orientador:</strong></td>
+        <td style="padding:4px 8px;border:1px solid #ccc" colspan="3">${state.nombre}</td>
+      </tr>
+    </table>
+
+    <div style="margin-bottom:12px">
+      <div style="background:#f0f0f0;padding:5px 10px;font-weight:bold;border-left:4px solid #333;font-size:11pt">
+        INFORME / DIAGNÓSTICO
       </div>
-      <div class="firma-linea">
-        <p><strong>${est.acudiente || 'Acudiente'}</strong></p>
-        <p>Acudiente / Padre de Familia</p>
-      </div>
-      <div class="firma-linea">
-        <p><strong>${estudiante}</strong></p>
-        <p>Estudiante</p>
+      <div style="border:1px solid #ccc;padding:10px;min-height:80px;text-align:justify;font-size:11pt;line-height:1.6">
+        ${informeHtml}
       </div>
     </div>
+
+    <div style="margin-bottom:28px">
+      <div style="background:#f0f0f0;padding:5px 10px;font-weight:bold;border-left:4px solid #333;font-size:11pt">
+        COMPROMISOS ADQUIRIDOS
+      </div>
+      <div style="border:1px solid #ccc;padding:10px;min-height:70px;text-align:justify;font-size:11pt;line-height:1.6">
+        ${compromisosHtml}
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:30px">
+      <tr>
+        <td style="text-align:center;padding:10px;width:33%">
+          <div style="border-top:1px solid #333;padding-top:6px;font-size:10pt">
+            <strong>${state.nombre}</strong><br>Docente / Orientador
+          </div>
+        </td>
+        <td style="text-align:center;padding:10px;width:33%">
+          <div style="border-top:1px solid #333;padding-top:6px;font-size:10pt">
+            <strong>${est.acudiente || 'Acudiente'}</strong><br>Acudiente / Padre de Familia
+          </div>
+        </td>
+        <td style="text-align:center;padding:10px;width:33%">
+          <div style="border-top:1px solid #333;padding-top:6px;font-size:10pt">
+            <strong>${estudiante}</strong><br>Estudiante
+          </div>
+        </td>
+      </tr>
+    </table>
   `;
 
   const container = document.getElementById('actaContainer');
   container.innerHTML = actaHTML;
-  // Hacer visible para que html2pdf pueda renderizarlo correctamente
-  container.style.visibility = 'visible';
-  container.style.left = '-9999px';
 
-  // Esperar a que el DOM renderice antes de capturar
-  setTimeout(() => {
-    const opt = {
-      margin: [15, 15],
-      filename: `Acta_${estudiante.replace(/\s+/g,'_')}_${fecha}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+  // Mover al body normalmente para que html2pdf pueda medirlo
+  container.style.left   = '0';
+  container.style.top    = '0';
+  container.style.zIndex = '-999';
 
-    html2pdf().set(opt).from(container).save().then(() => {
-      container.style.visibility = 'hidden';
-      showToast('Acta PDF generada.', 'success');
-    });
-  }, 300);
+  const opt = {
+    margin:     [10, 10, 10, 10],
+    filename:   `Acta_${estudiante.replace(/\s+/g,'_')}_${fecha}.pdf`,
+    image:      { type: 'jpeg', quality: 0.98 },
+    html2canvas:{ scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+    jsPDF:      { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  showToast('Generando PDF...', 'info');
+
+  html2pdf().set(opt).from(container).save().then(() => {
+    container.style.left   = '-9999px';
+    container.style.zIndex = '-1';
+    showToast('Acta PDF generada correctamente.', 'success');
+  }).catch(err => {
+    showToast('Error generando PDF: ' + err.message, 'error');
+    container.style.left = '-9999px';
+  });
 }
 
 // ============================================================
@@ -1927,23 +2090,22 @@ async function cargarNovedades() {
 }
 
 function renderNovedades(novedades) {
+  state.todasNovedades = novedades || [];
   const lista = document.getElementById('novedadesLista');
   if (!novedades || novedades.length === 0) {
     lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Sin novedades registradas.</p>';
     return;
   }
 
-  const header = `<div class="novedad-row" style="color:var(--text-2);font-size:.75rem;text-transform:uppercase;font-weight:600;border-bottom:2px solid var(--border)">
-    <div>Estudiante / Motivo</div>
-    <div>Inicio</div>
-    <div>Fin</div>
-    <div>Estado</div>
+  const header = `<div style="display:grid;grid-template-columns:1fr 100px 100px 110px 80px;gap:.5rem;padding:.5rem 0;color:var(--text-2);font-size:.72rem;text-transform:uppercase;font-weight:600;border-bottom:2px solid var(--border)">
+    <div>Estudiante / Motivo</div><div>Inicio</div><div>Fin</div><div>Estado</div><div></div>
   </div>`;
 
-  const rows = novedades.slice().reverse().map(n => {
+  const rows = novedades.slice().reverse().map((n, idx) => {
+    const realIdx = novedades.length - 1 - idx; // índice real en el array original
     const estadoCls = (n.estado || '').toLowerCase();
     const badgeCls = estadoCls === 'activa' ? 'activa' : estadoCls === 'pendiente' ? 'pendiente' : 'inactiva';
-    return `<div class="novedad-row">
+    return `<div style="display:grid;grid-template-columns:1fr 100px 100px 110px 80px;gap:.5rem;padding:.6rem 0;border-bottom:1px solid var(--border);align-items:center">
       <div>
         <div style="font-weight:500;color:var(--text-1)">${n.estudiante}</div>
         <div style="font-size:.78rem;color:var(--text-2)">${n.motivo || ''}</div>
@@ -1952,10 +2114,73 @@ function renderNovedades(novedades) {
       <div style="font-size:.82rem;color:var(--text-2)">${formatDate(n.inicio)}</div>
       <div style="font-size:.82rem;color:var(--text-2)">${formatDate(n.fin)}</div>
       <div><span class="novedad-badge ${badgeCls}">${n.estado || '–'}</span></div>
+      <div>
+        <button class="btn-cesum btn-cesum-secondary sm" onclick="abrirEditarNovedad(${realIdx})">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </div>
     </div>`;
   }).join('');
 
   lista.innerHTML = header + rows;
+}
+
+function abrirEditarNovedad(idx) {
+  const n = state.todasNovedades[idx];
+  if (!n) return;
+  document.getElementById('editNovIdx').value      = idx;
+  document.getElementById('editNovEstudiante').value = n.estudiante;
+  document.getElementById('editNovInicio').value   = formatDate(n.inicio);
+  document.getElementById('editNovFin').value      = formatDate(n.fin);
+  document.getElementById('editNovEstado').value   = n.estado || 'Activa';
+  document.getElementById('editNovMotivo').value   = n.motivo || '';
+  new bootstrap.Modal(document.getElementById('modalEditarNovedad')).show();
+}
+
+async function guardarEdicionNovedad() {
+  const idx       = parseInt(document.getElementById('editNovIdx').value);
+  const novOriginal = state.todasNovedades[idx];
+  const nuevoEstado = document.getElementById('editNovEstado').value;
+  const nuevoFin    = document.getElementById('editNovFin').value;
+  const nuevoInicio = document.getElementById('editNovInicio').value;
+  const nuevoMotivo = document.getElementById('editNovMotivo').value.trim();
+
+  bootstrap.Modal.getInstance(document.getElementById('modalEditarNovedad')).hide();
+  showLoading(true);
+  try {
+    const res = await apiCall({
+      action:    'editarNovedad',
+      idx,
+      estudiante: novOriginal.estudiante,
+      inicio:    nuevoInicio,
+      fin:       nuevoFin,
+      estado:    nuevoEstado,
+      motivo:    nuevoMotivo,
+      docente:   novOriginal.docente
+    });
+    if (res.ok) {
+      showToast('Novedad actualizada.', 'success');
+      await cargarNovedades();
+      // Refrescar novedades activas
+      const rNov = await apiCall({ action: 'getNovedades' });
+      if (rNov.ok) {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        state.novedadesActivas = rNov.novedades.filter(n => {
+          if (!n.inicio) return false;
+          const ini = new Date(n.inicio); ini.setHours(0,0,0,0);
+          const fin = n.fin ? new Date(n.fin) : null;
+          if (fin) fin.setHours(23,59,59,999);
+          return (!n.estado || n.estado.toLowerCase() !== 'inactiva') && hoy >= ini && (!fin || hoy <= fin);
+        });
+      }
+    } else {
+      showToast('Error: ' + res.msg, 'error');
+    }
+  } catch(err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
 }
 
 async function guardarNovedad() {
@@ -2006,6 +2231,71 @@ async function guardarNovedad() {
   } finally {
     showLoading(false);
   }
+}
+
+// ============================================================
+// SEGUIMIENTO DE CITAS (Admin)
+// ============================================================
+
+let todasLasCitas = [];
+
+async function cargarSeguimiento() {
+  const tbody = document.getElementById('seguimientoBody');
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Cargando...</td></tr>';
+  try {
+    const res = await apiCall({ action: 'getAllCitas' });
+    if (!res.ok) {
+      tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);text-align:center;padding:1rem">${res.msg}</td></tr>`;
+      return;
+    }
+    todasLasCitas = res.citas || [];
+    renderSeguimiento(todasLasCitas);
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red);text-align:center;padding:1rem">Error: ${err.message}</td></tr>`;
+  }
+}
+
+function filtrarSeguimiento() {
+  const filtro = document.getElementById('filtroEstadoCita').value;
+  const filtradas = filtro ? todasLasCitas.filter(c => c.estado === filtro) : todasLasCitas;
+  renderSeguimiento(filtradas);
+}
+
+function renderSeguimiento(citas) {
+  const tbody = document.getElementById('seguimientoBody');
+  if (!citas || citas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin citas registradas.</td></tr>';
+    return;
+  }
+
+  // Ordenar: primero pendientes, luego por fecha desc
+  const sorted = [...citas].sort((a, b) => {
+    if (a.estado === 'Pendiente' && b.estado !== 'Pendiente') return -1;
+    if (b.estado === 'Pendiente' && a.estado !== 'Pendiente') return 1;
+    return new Date(b.fecha) - new Date(a.fecha);
+  });
+
+  tbody.innerHTML = sorted.map(c => {
+    const esPendiente = c.estado === 'Pendiente';
+    const estadoBadge = esPendiente
+      ? `<span style="background:#4a1d9630;color:#d8b4fe;border:1px solid #a855f740;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Pendiente</span>`
+      : `<span style="background:#16653430;color:#4ade80;border:1px solid #22c55e40;border-radius:20px;font-size:.7rem;font-weight:600;padding:.18rem .6rem">Completada</span>`;
+
+    const informeCell    = c.informe     ? `<span title="${c.informe}"     style="font-size:.78rem;color:var(--text-2)">${c.informe.substring(0,40)}${c.informe.length>40?'…':''}</span>`     : '<span style="color:var(--text-3);font-size:.75rem">–</span>';
+    const compromisosCell= c.compromisos ? `<span title="${c.compromisos}" style="font-size:.78rem;color:var(--text-2)">${c.compromisos.substring(0,40)}${c.compromisos.length>40?'…':''}</span>` : '<span style="color:var(--text-3);font-size:.75rem">–</span>';
+
+    return `<tr>
+      <td style="font-weight:500">${c.estudiante}</td>
+      <td>${formatDate(c.fecha)}</td>
+      <td>${c.hora || '–'}</td>
+      <td style="font-size:.82rem;max-width:150px">${c.motivo || '–'}</td>
+      <td>${c.acudiente_asiste || '–'}</td>
+      <td>${estadoBadge}</td>
+      <td style="max-width:180px">${informeCell}</td>
+      <td style="max-width:180px">${compromisosCell}</td>
+      <td style="font-size:.78rem;color:var(--text-2)">${c.docente || '–'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ============================================================
