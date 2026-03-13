@@ -3,47 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Control y Análisis de Asistencia</title>
+    <title>SGA - Sistema de Gestión Académica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { background-color: #f8f9fa; }
+        :root {
+            --psico-color: #6f42c1;
+            --fuga-color: #212529;
+            --retardo-color: #fd7e14;
+        }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
         .hidden { display: none !important; }
-        .table-responsive { max-height: 65vh; overflow-y: auto; }
+        .table-responsive { max-height: 70vh; overflow-y: auto; }
+        thead th { position: sticky; top: 0; z-index: 10; background-color: #212529 !important; color: white; }
+        
+        /* Estilos de etiquetas de asistencia */
+        .badge-asist { width: 100%; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; border: 1px solid transparent; }
+        .color-asistio { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+        .color-falla { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+        .color-excusa { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+        .color-fuga { background-color: #212529; color: #ffffff; }
+        .color-retardo { background-color: #fff3cd; color: #664d03; border-color: #ffecb5; }
+        .color-suspension { background-color: #f8d7da; color: #842029; border: 2px solid #842029; }
+        .color-citapsico { background-color: #e0cffc; color: #3d0a91; border: 2px dashed var(--psico-color); }
+
+        /* Leyendas */
+        .legend-item { display: inline-flex; align-items: center; margin-right: 15px; font-size: 0.85rem; font-weight: 500; }
+        .dot { width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; }
+        
         .btn-wa { background-color: #25D366; color: white; border: none; }
         .btn-wa:hover { background-color: #128C7E; color: white; }
-        .nav-link { cursor: pointer; }
-        .stat-card { border-left: 4px solid #0d6efd; }
-        .stat-card.danger { border-left-color: #dc3545; }
-        .stat-card.warning { border-left-color: #ffc107; }
-        thead th { position: sticky; top: 0; z-index: 1; }
-        .badge-novedad { font-size: 0.75rem; white-space: normal; text-align: left; display: inline-block; }
+        .nav-link { cursor: pointer; font-weight: 500; }
+        .badge-novedad { font-size: 0.75rem; white-space: normal; text-align: left; display: block; margin-top: 4px; }
+
+        /* Estilo para el PDF (Oculto en web) */
+        #pdf-template { padding: 40px; color: #000; background: white; }
+        .pdf-header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow-sm">
+    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow-sm sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#"><i class="fas fa-chart-line me-2"></i>Portal Docente</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <a class="navbar-brand fw-bold" href="#"><i class="fas fa-shield-halved me-2"></i>SGA INSTITUCIONAL</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" id="tab-asistencia" onclick="cambiarVista('asistencia')">Asistencia</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="tab-estadisticas" onclick="cambiarVista('estadisticas')">Análisis</a>
-                    </li>
-                    <li class="nav-item hidden" id="nav-admin">
-                        <a class="nav-link text-warning fw-bold" id="tab-admin" onclick="cambiarVista('admin')">
-                            <i class="fas fa-crown me-1"></i>Gestión de Novedades
-                        </a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link active" id="tab-asistencia" onclick="cambiarVista('asistencia')">Asistencia</a></li>
+                    <li class="nav-item"><a class="nav-link" id="tab-psico" onclick="cambiarVista('psico')">Psicología / Coord.</a></li>
+                    <li class="nav-item"><a class="nav-link" id="tab-estadisticas" onclick="cambiarVista('estadisticas')">Estadísticas</a></li>
+                    <li class="nav-item hidden" id="nav-admin"><a class="nav-link text-warning fw-bold" id="tab-admin" onclick="cambiarVista('admin')">Novedades Admin</a></li>
                 </ul>
                 <span class="navbar-text me-3 text-white fw-bold" id="welcome-message"></span>
-                <button onclick="cerrarSesion()" class="btn btn-sm btn-outline-light"><i class="fas fa-sign-out-alt"></i> Salir</button>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-light"><i class="fas fa-sign-out-alt"></i> Salir</button>
             </div>
         </div>
     </nav>
@@ -52,20 +64,12 @@
         <div class="row justify-content-center">
             <div class="col-md-4">
                 <div class="card shadow border-0">
-                    <div class="card-body p-4">
-                        <div class="text-center mb-4">
-                            <i class="fas fa-user-shield fa-3x text-primary mb-3"></i>
-                            <h4>Acceso al Sistema</h4>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Usuario</label>
-                            <input type="text" id="username" class="form-control" placeholder="Ingresa tu usuario">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label text-muted">Contraseña</label>
-                            <input type="password" id="password" class="form-control" placeholder="••••••••">
-                        </div>
-                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 py-2" id="btn-login">Ingresar</button>
+                    <div class="card-body p-4 text-center">
+                        <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
+                        <h4 class="mb-4">Acceso Institucional</h4>
+                        <input type="text" id="username" class="form-control mb-3" placeholder="Usuario">
+                        <input type="password" id="password" class="form-control mb-3" placeholder="Contraseña">
+                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 py-2 fw-bold">Entrar</button>
                     </div>
                 </div>
             </div>
@@ -73,107 +77,101 @@
     </div>
 
     <div id="asistencia-section" class="container-fluid mt-4 hidden">
-        <div class="row mb-3 align-items-end bg-white p-3 rounded shadow-sm mx-0">
-            <div class="col-md-4 mb-2 mb-md-0">
-                <label class="form-label fw-bold text-primary mb-2">Modo de Agrupación:</label>
-                <div class="p-2 border rounded bg-light">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroNew" value="grado_new" checked onchange="llenarFiltroGrados()">
-                        <label class="form-check-label" for="filtroNew">Etiqueta Actual</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="tipoFiltro" id="filtroOrig" value="grado_orig" onchange="llenarFiltroGrados()">
-                        <label class="form-check-label" for="filtroOrig">Grado Original</label>
-                    </div>
+        <div class="card shadow-sm mb-3 border-0">
+            <div class="card-body py-2 d-flex flex-wrap align-items-center justify-content-between">
+                <div class="d-flex flex-wrap">
+                    <div class="legend-item"><div class="dot color-asistio"></div> Asistió</div>
+                    <div class="legend-item"><div class="dot color-falla"></div> Falla</div>
+                    <div class="legend-item"><div class="dot color-excusa"></div> Excusa</div>
+                    <div class="legend-item"><div class="dot color-fuga"></div> Fuga</div>
+                    <div class="legend-item"><div class="dot color-retardo"></div> Retardo</div>
+                    <div class="legend-item"><div class="dot color-citapsico"></div> Cita Psico</div>
                 </div>
-            </div>
-            <div class="col-md-4 mb-2 mb-md-0">
-                <label class="form-label fw-bold">Seleccionar Grupo:</label>
-                <select id="filtro-grado" class="form-select border-primary" onchange="renderizarTabla()">
-                    <option value="">Esperando datos...</option>
-                </select>
-            </div>
-            <div class="col-md-4 text-md-end text-start">
-                <button onclick="cargarDatos()" class="btn btn-secondary" id="btn-actualizar">
-                    <i class="fas fa-sync-alt"></i> Actualizar Lista
-                </button>
+                <div class="d-flex gap-2">
+                    <select id="filtro-grado" class="form-select form-select-sm" onchange="renderizarTabla()" style="width: 200px;"></select>
+                    <button onclick="cargarDatos()" class="btn btn-sm btn-secondary"><i class="fas fa-sync-alt"></i></button>
+                </div>
             </div>
         </div>
 
         <div class="card shadow border-0">
-            <div class="card-body p-0 table-responsive">
+            <div class="table-responsive">
                 <table class="table table-striped table-hover mb-0 align-middle">
-                    <thead class="table-dark">
+                    <thead>
                         <tr>
-                            <th style="min-width: 250px;">Estudiante</th>
+                            <th style="min-width: 280px;">Estudiante</th>
                             <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
                             <th class="text-center">Reporte</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-estudiantes">
-                        <tr><td colspan="8" class="text-center text-muted py-4">Selecciona un grupo para ver los estudiantes</td></tr>
-                    </tbody>
+                    <tbody id="tabla-estudiantes"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <div id="admin-section" class="container mt-4 hidden">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card shadow border-warning">
-                    <div class="card-header bg-warning text-dark fw-bold">
-                        <i class="fas fa-calendar-plus me-2"></i>Registrar Novedad Prolongada (Admin)
-                    </div>
+    <div id="psico-section" class="container mt-4 hidden">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card shadow-sm mb-4 border-0">
+                    <div class="card-header bg-primary text-white fw-bold"><i class="fas fa-calendar-check me-2"></i>Nueva Citación / Seguimiento</div>
                     <div class="card-body">
-                        <p class="text-muted small">Al registrar una novedad aquí, el sistema precargará el estado seleccionado a todos los docentes durante el rango de fechas indicado.</p>
-                        
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Buscar Estudiante:</label>
-                            <input class="form-control" list="datalist-estudiantes" id="admin-estudiante" placeholder="Escribe para buscar...">
-                            <datalist id="datalist-estudiantes"></datalist>
+                            <label class="form-label fw-bold small">Estudiante:</label>
+                            <input class="form-control" list="datalist-estudiantes" id="psico-estudiante" placeholder="Buscar estudiante...">
                         </div>
-                        
                         <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Fecha de Inicio:</label>
-                                <input type="date" id="admin-inicio" class="form-control">
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Fecha Cita:</label>
+                                <input type="date" id="psico-fecha" class="form-control">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Fecha de Fin:</label>
-                                <input type="date" id="admin-fin" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Estado a Precargar:</label>
-                                <select id="admin-estado" class="form-select">
-                                    <option value="Excusa">Excusa</option>
-                                    <option value="Falla">Falla</option>
-                                    <option value="Suspensión">Suspensión</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Motivo Principal:</label>
-                                <select id="admin-motivo" class="form-select" onchange="toggleOtroMotivo()">
-                                    <option value="Médica">Excusa Médica</option>
-                                    <option value="Psicología">Citación a Psicología</option>
-                                    <option value="Deportivo">Evento Deportivo</option>
-                                    <option value="Disciplinario">Proceso Disciplinario</option>
-                                    <option value="Otro">Otra razón...</option>
+                            <div class="col-6">
+                                <label class="form-label fw-bold small">Hora Clase:</label>
+                                <select id="psico-hora" class="form-select">
+                                    <option value="H1">H1</option><option value="H2">H2</option><option value="H3">H3</option>
+                                    <option value="H4">H4</option><option value="H5">H5</option><option value="H6">H6</option>
                                 </select>
                             </div>
                         </div>
-
-                        <div class="mb-3 hidden" id="div-otro-motivo">
-                            <label class="form-label fw-bold">Especificar otra razón:</label>
-                            <input type="text" id="admin-otro-motivo" class="form-control" placeholder="Ej: Viaje familiar">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Motivo / Tipo de Cita:</label>
+                            <select id="psico-motivo-tipo" class="form-select">
+                                <option value="Psicología">Psicología</option>
+                                <option value="Coordinación">Coordinación</option>
+                                <option value="Comité Escolar">Comité Escolar</option>
+                            </select>
                         </div>
-
-                        <button onclick="guardarNovedadAdmin()" class="btn btn-warning w-100 fw-bold" id="btn-guardar-admin">
-                            <i class="fas fa-save me-2"></i>Registrar Novedad
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Detalle del Informe:</label>
+                            <textarea id="psico-informe" class="form-control" rows="2" placeholder="Describa el porqué de la citación..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Compromisos Adquiridos:</label>
+                            <textarea id="psico-compromisos" class="form-control" rows="2" placeholder="Escriba los acuerdos pactados..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Acudiente que asistió:</label>
+                            <input type="text" id="psico-acudiente-nombre" class="form-control" placeholder="Nombre completo del acudiente">
+                        </div>
+                        <button onclick="guardarCitacion()" class="btn btn-success w-100 fw-bold">
+                            <i class="fab fa-whatsapp me-2"></i>Agendar y Notificar
                         </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="fas fa-history me-2"></i>Historial de Citaciones</span>
+                        <button onclick="generarPDFHistorial()" class="btn btn-sm btn-outline-light"><i class="fas fa-file-pdf me-1"></i>Exportar PDF por Alumno</button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead class="table-light">
+                                <tr><th>Estudiante</th><th>Fecha/Hora</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr>
+                            </thead>
+                            <tbody id="tabla-citaciones"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -181,410 +179,236 @@
     </div>
 
     <div id="estadisticas-section" class="container mt-4 hidden">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="m-0 text-primary"><i class="fas fa-chart-bar me-2"></i>Análisis de Asistencia</h3>
-            <button onclick="procesarEstadisticas()" class="btn btn-primary" id="btn-stats">
-                <i class="fas fa-calculator me-2"></i>Calcular Métricas
-            </button>
-        </div>
-        
-        <div class="row mb-4" id="tarjetas-stats">
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card shadow-sm stat-card h-100">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Total Registros Analizados</h6>
-                        <h2 id="stat-total-horas" class="m-0 fw-bold">0</h2>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card shadow-sm stat-card danger h-100">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Alerta Crítica: Más Fugas</h6>
-                        <h4 id="stat-peor-fuga" class="text-danger m-0 fw-bold">-</h4>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card shadow-sm stat-card warning h-100">
-                    <div class="card-body">
-                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.8rem;">Alerta: Más Fallas</h6>
-                        <h4 id="stat-peor-falla" class="text-warning m-0 fw-bold">-</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <h3 class="mb-4 text-primary fw-bold">Análisis de Datos Escolar</h3>
+        <button onclick="procesarEstadisticas()" class="btn btn-primary mb-4" id="btn-stats"><i class="fas fa-calculator me-2"></i>Calcular Métricas</button>
+        <div id="contenedor-stats"></div>
+    </div>
 
-        <div class="card shadow border-0">
-            <div class="card-header bg-dark text-white fw-bold py-3">
-                <i class="fas fa-table me-2"></i>Desglose Detallado por Estudiante
+    <div id="admin-section" class="container mt-4 hidden">
+        <div class="row justify-content-center"><div class="col-md-8"><div class="card shadow border-warning"><div class="card-header bg-warning fw-bold">Novedades Administrativas</div><div class="card-body" id="form-admin-body">
+            <div class="mb-3"><label class="form-label fw-bold">Estudiante:</label><input class="form-control" list="datalist-estudiantes" id="admin-estudiante"></div>
+            <div class="row mb-3"><div class="col-6"><label class="form-label fw-bold">Inicio:</label><input type="date" id="admin-inicio" class="form-control"></div><div class="col-6"><label class="form-label fw-bold">Fin:</label><input type="date" id="admin-fin" class="form-control"></div></div>
+            <div class="row mb-3">
+                <div class="col-6"><label class="form-label fw-bold">Estado:</label><select id="admin-estado" class="form-select"><option value="Excusa">Excusa</option><option value="Falla">Falla</option><option value="Suspensión">Suspensión</option></select></div>
+                <div class="col-6"><label class="form-label fw-bold">Motivo:</label><select id="admin-motivo" class="form-select"><option value="Médica">Médica</option><option value="Psicología">Psicología</option><option value="Deportivo">Deportivo</option><option value="Otro">Otro</option></select></div>
             </div>
-            <div class="card-body p-0 table-responsive">
-                <table class="table table-hover mb-0 text-center align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-start ps-4">Estudiante</th>
-                            <th>Grado</th>
-                            <th>Asistencias (✓)</th>
-                            <th>Fallas (F)</th>
-                            <th>Fugas Totales</th>
-                            <th>Excusas (E)</th>
-                            <th>Alertas (WhatsApp)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-estadisticas">
-                        <tr><td colspan="7" class="text-muted py-4">Haz clic en "Calcular Métricas" para cargar los datos</td></tr>
-                    </tbody>
-                </table>
+            <button onclick="guardarNovedadAdmin()" class="btn btn-warning w-100 fw-bold">Guardar Novedad</button>
+        </div></div></div></div>
+    </div>
+
+    <div id="pdf-container" class="hidden">
+        <div id="pdf-template">
+            <div class="pdf-header">
+                <h2>INSTITUCIÓN EDUCATIVA SGA</h2>
+                <h4>HISTORIAL DE SEGUIMIENTO PSICOPEDAGÓGICO</h4>
+                <p>Generado el: <span id="pdf-fecha-gen"></span></p>
+            </div>
+            <div class="mb-4">
+                <p><strong>Estudiante:</strong> <span id="pdf-estudiante-nom"></span></p>
+                <p><strong>Grado:</strong> <span id="pdf-estudiante-grado"></span></p>
+            </div>
+            <table class="table table-bordered border-dark">
+                <thead>
+                    <tr class="table-secondary">
+                        <th>Fecha</th><th>Hora</th><th>Motivo</th><th>Compromisos</th><th>Acudiente</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-tabla-body"></tbody>
+            </table>
+            <div class="mt-5 pt-5 row text-center">
+                <div class="col-6"><hr class="mx-auto w-75"><p>Firma Psicología / Coordinación</p></div>
+                <div class="col-6"><hr class="mx-auto w-75"><p>Firma Acudiente</p></div>
             </div>
         </div>
     </div>
 
     <div class="modal fade" id="modalReporte" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Reporte de Conducta</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-3 text-muted">Estudiante: <strong class="text-dark" id="modal-nombre-estudiante"></strong></p>
-                    <input type="hidden" id="modal-acudiente">
-                    <input type="hidden" id="modal-telefono">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Clasificación de la falta:</label>
-                        <select id="modal-falta" class="form-select">
-                            <option value="Desorden en clase">Desorden en clase</option>
-                            <option value="No trajo material">No trajo material</option>
-                            <option value="Llamados de atención">Llamados de atención</option>
-                            <option value="Fuga de clase">Fuga de clase</option>
-                            <option value="Llegada tarde">Llegada tarde</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Observación detallada:</label>
-                        <textarea id="modal-observacion" class="form-control" rows="3" placeholder="Describe brevemente lo sucedido..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-wa px-4" onclick="enviarWhatsApp()"><i class="fab fa-whatsapp me-2"></i>Notificar al Acudiente</button>
-                </div>
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning"><h5><i class="fas fa-bullhorn me-2"></i>Reporte Docente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p>Estudiante: <strong id="modal-nombre-estudiante"></strong></p>
+                <select id="modal-falta" class="form-select mb-3">
+                    <option value="Desorden en clase">Desorden en clase</option>
+                    <option value="No trajo material">No trajo material</option>
+                    <option value="Retardo">Retardo (Llegada tarde)</option>
+                    <option value="Fuga de clase">Fuga de clase</option>
+                </select>
+                <textarea id="modal-observacion" class="form-control" rows="3" placeholder="Observaciones..."></textarea>
             </div>
-        </div>
+            <div class="modal-footer"><button onclick="enviarWhatsApp()" class="btn btn-success w-100 fw-bold">Enviar a Acudiente</button></div>
+        </div></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // PEGA AQUÍ TU URL
         const API_URL = "https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec";
-        
-        let nombreDocenteActual = "";
-        let esUsuarioEspecial = false;
-        let listaEstudiantes = [];
-        let listaNovedades = [];
+        let nombreDocenteActual = "", esUsuarioEspecial = false, listaEstudiantes = [], listaNovedades = [], listaCitaciones = [];
 
         async function fetchAPI(datos) {
-            try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(datos) });
-                return await response.json();
-            } catch (error) {
-                console.error(error); throw new Error("Error de conexión");
-            }
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(datos) });
+            return await res.json();
         }
 
         async function iniciarSesion() {
-            const user = document.getElementById("username").value;
-            const pass = document.getElementById("password").value;
-            const btn = document.getElementById("btn-login");
-            if(!user || !pass) return alert("Ingresa tus credenciales.");
-
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Autenticando...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetchAPI({ accion: "login", usuario: user, password: pass });
-                if (res.exito) {
-                    nombreDocenteActual = res.nombreDocente;
-                    
-                    // LÓGICA DE USUARIO ESPECIAL
-                    esUsuarioEspecial = pass.startsWith('@');
-                    if(esUsuarioEspecial) {
-                        document.getElementById("nav-admin").classList.remove("hidden");
-                    }
-
-                    document.getElementById("login-section").classList.add("hidden");
-                    document.getElementById("main-nav").classList.remove("hidden");
-                    document.getElementById("welcome-message").innerText = (esUsuarioEspecial ? "👑 Admin: " : "Prof. ") + nombreDocenteActual;
-                    
-                    cambiarVista('asistencia');
-                    cargarDatos();
-                } else {
-                    alert(res.mensaje || "Credenciales incorrectas");
-                }
-            } catch (error) { alert(error.message); } 
-            finally { btn.innerText = "Ingresar"; btn.disabled = false; }
-        }
-
-        function cerrarSesion() { location.reload(); }
-
-        function cambiarVista(vista) {
-            ['asistencia', 'estadisticas', 'admin'].forEach(v => {
-                document.getElementById(`${v}-section`)?.classList.add('hidden');
-                document.getElementById(`tab-${v}`)?.classList.remove('active');
-            });
-            document.getElementById(`${vista}-section`).classList.remove('hidden');
-            document.getElementById(`tab-${vista}`).classList.add('active');
+            const u = document.getElementById("username").value, p = document.getElementById("password").value;
+            if(!u || !p) return alert("Completa los campos.");
+            const res = await fetchAPI({ accion: "login", usuario: u, password: p });
+            if (res.exito) {
+                nombreDocenteActual = res.nombreDocente;
+                esUsuarioEspecial = p.startsWith('@');
+                if(esUsuarioEspecial) document.getElementById("nav-admin").classList.remove("hidden");
+                document.getElementById("login-section").classList.add("hidden");
+                document.getElementById("main-nav").classList.remove("hidden");
+                document.getElementById("welcome-message").innerText = (esUsuarioEspecial ? "👑 " : "Prof. ") + nombreDocenteActual;
+                cambiarVista('asistencia');
+                cargarDatos();
+            } else alert("Credenciales incorrectas");
         }
 
         async function cargarDatos() {
-            const btn = document.getElementById("btn-actualizar");
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...'; btn.disabled = true;
-
-            try {
-                const res = await fetchAPI({ accion: "obtenerDatosIniciales" });
-                if (res.exito) {
-                    listaEstudiantes = res.estudiantes;
-                    listaNovedades = res.novedades;
-                    llenarFiltroGrados();
-                    llenarDatalistEstudiantes();
-                    renderizarTabla();
-                }
-            } catch (error) { alert("Error cargando los datos."); } 
-            finally { btn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar Lista'; btn.disabled = false; }
+            const res = await fetchAPI({ accion: "obtenerDatosIniciales" });
+            if (res.exito) {
+                listaEstudiantes = res.estudiantes;
+                listaNovedades = res.novedades;
+                listaCitaciones = res.citaciones;
+                llenarFiltros();
+                renderizarTabla();
+                renderizarCitaciones();
+            }
         }
 
-        function llenarFiltroGrados() {
-            const prop = document.querySelector('input[name="tipoFiltro"]:checked').value;
-            const grados = [...new Set(listaEstudiantes.map(e => e[prop]))].filter(g => g).sort();
-            const select = document.getElementById("filtro-grado");
-            select.innerHTML = '<option value="">Seleccione un grupo...</option>';
-            grados.forEach(g => select.innerHTML += `<option value="${g}">${g}</option>`);
-            renderizarTabla();
-        }
-
-        function llenarDatalistEstudiantes() {
-            const datalist = document.getElementById("datalist-estudiantes");
-            datalist.innerHTML = "";
-            listaEstudiantes.forEach(e => {
-                datalist.innerHTML += `<option value="${e.nombre}">`;
+        function cambiarVista(v) {
+            ['asistencia', 'psico', 'estadisticas', 'admin'].forEach(x => {
+                document.getElementById(x + '-section')?.classList.add('hidden');
+                document.getElementById('tab-' + x)?.classList.remove('active');
             });
+            document.getElementById(v + '-section').classList.remove('hidden');
+            document.getElementById('tab-' + v).classList.add('active');
+        }
+
+        function llenarFiltros() {
+            const g = [...new Set(listaEstudiantes.map(e => e.grado_new))].sort();
+            document.getElementById("filtro-grado").innerHTML = g.map(x => `<option value="${x}">${x}</option>`).join('');
+            let dl = document.getElementById("datalist-estudiantes");
+            if(!dl) { dl = document.createElement('datalist'); dl.id="datalist-estudiantes"; document.body.appendChild(dl); }
+            dl.innerHTML = listaEstudiantes.map(e => `<option value="${e.nombre}">`).join('');
         }
 
         function renderizarTabla() {
-            const prop = document.querySelector('input[name="tipoFiltro"]:checked').value;
-            const gradoSeleccionado = document.getElementById("filtro-grado").value;
+            const g = document.getElementById("filtro-grado").value;
+            const hoy = new Date().toLocaleDateString('en-CA');
             const tbody = document.getElementById("tabla-estudiantes");
-            
-            if (!gradoSeleccionado) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Selecciona un grupo</td></tr>'; return; }
             tbody.innerHTML = "";
-            
-            // Usamos formato YYYY-MM-DD para cruzar con la base de datos de novedades
-            const hoyStr = new Date().toLocaleDateString('en-CA'); 
 
-            const filtrados = listaEstudiantes.filter(e => e[prop] == gradoSeleccionado);
-
-            filtrados.forEach((est) => {
-                let novedadActiva = listaNovedades.find(n => n.estudiante === est.nombre && n.fechaInicio <= hoyStr && n.fechaFin >= hoyStr);
-                
-                let fila = `<tr>
-                    <td>
-                        <div class="fw-bold text-secondary" style="font-size: 0.9em;">${est.nombre}</div>`;
-                
-                if(novedadActiva) {
-                    let colorBadge = novedadActiva.estado === 'Excusa' ? 'bg-info' : (novedadActiva.estado === 'Suspensión' ? 'bg-danger' : 'bg-warning text-dark');
-                    fila += `<div class="badge ${colorBadge} badge-novedad mt-1"><i class="fas fa-info-circle"></i> ${novedadActiva.estado}: ${novedadActiva.motivo}</div>`;
-                }
-                fila += `</td>`;
+            listaEstudiantes.filter(e => e.grado_new == g).forEach(est => {
+                let nov = listaNovedades.find(n => n.estudiante === est.nombre && n.fechaInicio <= hoy && n.fechaFin >= hoy);
+                let fila = `<tr><td><div class="fw-bold">${est.nombre}</div>${nov ? `<span class="badge ${nov.estado=='Suspensión'?'bg-danger':'bg-info'} badge-novedad">${nov.estado}: ${nov.motivo}</span>`:''}</td>`;
                 
                 for(let i=1; i<=6; i++) {
-                    let estadoPorDefecto = novedadActiva ? novedadActiva.estado : "Asistió";
-                    
-                    fila += `<td>
-                        <select class="form-select form-select-sm shadow-none ${novedadActiva ? 'border-info bg-light' : ''}" onchange="marcarAsistencia('${est.nombre}', '${est.grado_new}', ${i}, this.value)" style="min-width: 65px; font-size: 0.85rem;">
-                            <option value="Asistió" ${estadoPorDefecto === 'Asistió' ? 'selected' : ''}>✓</option>
-                            <option value="Falla" ${estadoPorDefecto === 'Falla' ? 'selected' : ''}>F</option>
-                            <option value="Excusa" ${estadoPorDefecto === 'Excusa' ? 'selected' : ''}>E</option>
-                            <option value="Fuga" ${estadoPorDefecto === 'Fuga' ? 'selected' : ''}>Fug</option>
-                            <option value="Suspensión" ${estadoPorDefecto === 'Suspensión' ? 'selected' : ''}>Susp</option>
-                            <option value="">-</option>
-                        </select>
-                    </td>`;
+                    const h = "H" + i;
+                    const cita = listaCitaciones.find(c => c.estudiante == est.nombre && c.fecha_cita == hoy && c.tipo_cita == h);
+                    let def = nov ? nov.estado : (cita ? "Cita Psico" : "Asistió");
+                    fila += `<td><select class="form-select form-select-sm badge-asist color-${def.toLowerCase().replace(' ', '')}" onchange="marcar(this, '${est.nombre}', '${g}', '${h}')">
+                        <option value="Asistió" ${def=='Asistió'?'selected':''}>Asistió</option>
+                        <option value="Falla" ${def=='Falla'?'selected':''}>Falla</option>
+                        <option value="Excusa" ${def=='Excusa'?'selected':''}>Excusa</option>
+                        <option value="Fuga" ${def=='Fuga'?'selected':''}>Fuga</option>
+                        <option value="Retardo" ${def=='Retardo'?'selected':''}>Retardo</option>
+                        <option value="Cita Psico" ${def=='Cita Psico'?'selected':''}>Cita Psico</option>
+                    </select></td>`;
                 }
-
-                fila += `<td class="text-center"><button class="btn btn-sm btn-outline-warning" onclick="abrirModalReporte('${est.nombre}', '${est.acudiente}', '${est.tel_acud}')"><i class="fas fa-paper-plane"></i></button></td></tr>`;
+                fila += `<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="abrirR('${est.nombre}')"><i class="fas fa-bullhorn"></i></button></td></tr>`;
                 tbody.innerHTML += fila;
             });
         }
 
-        function marcarAsistencia(nombre, grado, hora, estado) {
-            if(!estado) return;
-            const fechaActual = new Date().toLocaleDateString('es-ES');
-            fetchAPI({ accion: "guardarAsistencia", datos: { fecha: fechaActual, hora: hora, estudiante: nombre, grado: grado, estado: estado, docente: nombreDocenteActual } }); 
+        function marcar(sel, est, g, h) {
+            sel.className = "form-select form-select-sm badge-asist color-" + sel.value.toLowerCase().replace(' ', '');
+            fetchAPI({ accion: "guardarAsistencia", datos: { fecha: new Date().toLocaleDateString('es-ES'), hora: h, estudiante: est, grado: g, estado: sel.value, docente: nombreDocenteActual } });
         }
 
-        // --- LÓGICA DE ADMIN (NOVEDADES) ---
-        function toggleOtroMotivo() {
-            const motivo = document.getElementById("admin-motivo").value;
-            const divOtro = document.getElementById("div-otro-motivo");
-            if(motivo === "Otro") divOtro.classList.remove("hidden");
-            else divOtro.classList.add("hidden");
-        }
-
-        async function guardarNovedadAdmin() {
-            const estudiante = document.getElementById("admin-estudiante").value;
-            const fInicio = document.getElementById("admin-inicio").value;
-            const fFin = document.getElementById("admin-fin").value;
-            const estado = document.getElementById("admin-estado").value;
-            let motivo = document.getElementById("admin-motivo").value;
-            
-            if(motivo === "Otro") {
-                const especificado = document.getElementById("admin-otro-motivo").value;
-                motivo = especificado ? `Otro: ${especificado}` : "Otra razón no especificada";
-            }
-
-            if(!estudiante || !fInicio || !fFin) return alert("Completa el estudiante y las fechas.");
-            if(fInicio > fFin) return alert("La fecha de inicio no puede ser mayor a la de fin.");
-
-            const btn = document.getElementById("btn-guardar-admin");
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...'; btn.disabled = true;
-
-            const datos = { estudiante: estudiante, fechaInicio: fInicio, fechaFin: fFin, estado: estado, motivoCompleto: motivo, docente: nombreDocenteActual };
-
-            try {
-                const res = await fetchAPI({ accion: "guardarNovedad", datos: datos });
-                if(res.exito) {
-                    alert("¡Novedad registrada exitosamente! Se pre-cargará a los docentes en esas fechas.");
-                    document.getElementById("admin-estudiante").value = "";
-                    document.getElementById("admin-inicio").value = "";
-                    document.getElementById("admin-fin").value = "";
-                    cargarDatos(); 
-                } else { alert("Error: " + res.mensaje); }
-            } catch(e) { alert("Error de conexión"); }
-            finally { btn.innerHTML = '<i class="fas fa-save me-2"></i>Registrar Novedad'; btn.disabled = false; }
-        }
-
-        // --- LÓGICA DE ESTADÍSTICAS COMPLETA ---
-        async function procesarEstadisticas() {
-            const btn = document.getElementById("btn-stats");
-            
-            try {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
-                btn.disabled = true;
-                
-                const res = await fetchAPI({ accion: "obtenerEstadisticas" });
-                
-                if (res.exito) {
-                    const logsAsistencia = res.datosAsistencia || [];
-                    const logsReportes = res.datosReportes || [];
-                    
-                    document.getElementById('stat-total-horas').innerText = logsAsistencia.length;
-
-                    let statsEstudiantes = {};
-                    
-                    // Contar desde la tabla de asistencia normal
-                    logsAsistencia.forEach(log => {
-                        let estudiante = log.estudiante || "Desconocido";
-                        if (!statsEstudiantes[estudiante]) {
-                            statsEstudiantes[estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: log.grado || "N/A" };
-                        }
-                        if (log.estado === "Asistió") statsEstudiantes[estudiante].asistencias++;
-                        if (log.estado === "Falla") statsEstudiantes[estudiante].fallas++;
-                        if (log.estado === "Fuga") statsEstudiantes[estudiante].fugas++;
-                        if (log.estado === "Excusa") statsEstudiantes[estudiante].excusas++;
-                    });
-
-                    // Contar desde la tabla de reportes de WhatsApp
-                    logsReportes.forEach(rep => {
-                        let estudiante = rep.estudiante || "Desconocido";
-                        if (!statsEstudiantes[estudiante]) {
-                            statsEstudiantes[estudiante] = { asistencias: 0, fallas: 0, fugas: 0, excusas: 0, reportes: 0, grado: "N/A" };
-                        }
-                        statsEstudiantes[estudiante].reportes++; 
-                        if (rep.falta === "Fuga de clase") {
-                            statsEstudiantes[estudiante].fugas++; 
-                        }
-                    });
-
-                    let maxFugas = 0; let estudiantePeorFuga = "N/A";
-                    let maxFallas = 0; let estudiantePeorFalla = "N/A";
-
-                    const tbody = document.getElementById("tabla-estadisticas");
-                    tbody.innerHTML = "";
-
-                    Object.entries(statsEstudiantes).forEach(([nombre, stats]) => {
-                        if (stats.fugas > maxFugas) { maxFugas = stats.fugas; estudiantePeorFuga = nombre; }
-                        if (stats.fallas > maxFallas) { maxFallas = stats.fallas; estudiantePeorFalla = nombre; }
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td class="text-start ps-4 fw-bold text-secondary">${nombre}</td>
-                                <td><span class="badge bg-light text-dark border">${stats.grado}</span></td>
-                                <td class="text-success fw-bold">${stats.asistencias}</td>
-                                <td class="${stats.fallas > 0 ? 'text-warning fw-bold' : ''}">${stats.fallas}</td>
-                                <td class="${stats.fugas > 0 ? 'text-danger fw-bold' : ''}">${stats.fugas}</td>
-                                <td class="text-secondary">${stats.excusas}</td>
-                                <td><span class="badge ${stats.reportes > 0 ? 'bg-danger' : 'bg-success'}">${stats.reportes}</span></td>
-                            </tr>
-                        `;
-                    });
-
-                    document.getElementById('stat-peor-fuga').innerText = maxFugas > 0 ? `${estudiantePeorFuga} (${maxFugas})` : "Sin fugas detectadas";
-                    document.getElementById('stat-peor-falla').innerText = maxFallas > 0 ? `${estudiantePeorFalla} (${maxFallas})` : "Sin fallas registradas";
-                } else {
-                    alert("Aviso: El servidor respondió con un error. (" + (res.mensaje || "Desconocido") + ").");
-                }
-            } catch (error) {
-                alert("Hubo un error técnico procesando los datos: " + error.message);
-            } finally {
-                btn.innerHTML = '<i class="fas fa-calculator me-2"></i>Calcular Métricas';
-                btn.disabled = false;
+        async function guardarCitacion() {
+            const d = {
+                estudiante: document.getElementById("psico-estudiante").value,
+                fecha_cita: document.getElementById("psico-fecha").value,
+                tipo_cita: document.getElementById("psico-hora").value,
+                motivo_citacion: document.getElementById("psico-motivo-tipo").value,
+                informe_cita: document.getElementById("psico-informe").value,
+                compromisos: document.getElementById("psico-compromisos").value,
+                acudiente_asiste: document.getElementById("psico-acudiente-nombre").value,
+                docente: nombreDocenteActual
+            };
+            if(!d.estudiante || !d.fecha_cita) return alert("Faltan datos.");
+            const res = await fetchAPI({ accion: "guardarCitacion", datos: d });
+            if(res.exito) {
+                const e = listaEstudiantes.find(x => x.nombre == d.estudiante);
+                const msg = `SGA Citación: Alumno ${d.estudiante}. Cita con ${d.motivo_citacion} el día ${d.fecha_cita} (${d.tipo_cita}). Acudiente citado: ${d.acudiente_asiste}.`;
+                window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+                cargarDatos();
             }
         }
 
-        // --- LÓGICA DE WHATSAPP COMPLETA ---
-        let modalInstancia;
-        function abrirModalReporte(nombre, acudiente, telefono) {
-            document.getElementById("modal-nombre-estudiante").innerText = nombre;
-            document.getElementById("modal-acudiente").value = acudiente || "Padre/Madre";
-            document.getElementById("modal-telefono").value = telefono || "";
-            document.getElementById("modal-observacion").value = "";
-            
-            if(!modalInstancia) {
-                modalInstancia = new bootstrap.Modal(document.getElementById('modalReporte'));
-            }
-            modalInstancia.show();
+        function renderizarCitaciones() {
+            document.getElementById("tabla-citaciones").innerHTML = listaCitaciones.slice(-20).reverse().map(c => `
+                <tr><td><small>${c.estudiante}</small></td><td><small>${c.fecha_cita}</small></td><td><small>${c.motivo}</small></td><td><span class="badge ${c.estado=='Cumplida'?'bg-success':'bg-secondary'}">${c.estado}</span></td>
+                <td><button onclick="cerrarCita('${c.id_cita}')" class="btn btn-xs btn-outline-primary py-0 px-1"><i class="fas fa-check"></i></button></td></tr>
+            `).join('');
         }
 
-        async function enviarWhatsApp() {
-            const estudiante = document.getElementById("modal-nombre-estudiante").innerText;
-            const acudiente = document.getElementById("modal-acudiente").value;
-            let telefono = document.getElementById("modal-telefono").value;
-            const falta = document.getElementById("modal-falta").value;
-            const obs = document.getElementById("modal-observacion").value;
-            const fecha = new Date().toLocaleDateString('es-ES');
-
-            if(!telefono) {
-                alert("Este estudiante no tiene un teléfono registrado en la base de datos.");
-                return;
+        async function cerrarCita(id) {
+            if(confirm("¿Cerrar cita?")) {
+                await fetchAPI({ accion: "actualizarEstadoCita", datos: { id_cita: id, nuevo_estado: "Cumplida" } });
+                cargarDatos();
             }
+        }
 
-            const datosReporte = { fecha: fecha, estudiante: estudiante, acudiente: acudiente, telefono: telefono, falta: falta, observacion: obs, docente: nombreDocenteActual };
-            fetchAPI({ accion: "guardarReporte", datos: datosReporte });
+        // --- FUNCIÓN GENERAR PDF ---
+        function generarPDFHistorial() {
+            const nombreBusqueda = prompt("Ingrese el nombre completo del estudiante para el reporte PDF:");
+            if(!nombreBusqueda) return;
 
-            const mensaje = `Estimado(a) *${acudiente}*, se le informa que el estudiante *${estudiante}* presentó un reporte por *${falta}* en la fecha ${fecha}. ${obs ? 'Observación: ' + obs + '. ' : ''}Solicitamos su valioso acompañamiento para cumplir adecuadamente los procesos. De proseguir con varios reportes, se procederá a una citación formal y proceso disciplinario. - Reporte generado por Prof. ${nombreDocenteActual}`;
+            const citasAlumno = listaCitaciones.filter(c => c.estudiante.toLowerCase().includes(nombreBusqueda.toLowerCase()));
+            const infoAlumno = listaEstudiantes.find(e => e.nombre.toLowerCase().includes(nombreBusqueda.toLowerCase()));
 
-            telefono = telefono.toString().replace(/\D/g, ''); 
+            if(citasAlumno.length === 0) return alert("No hay citaciones registradas para este estudiante.");
+
+            // Llenar template
+            document.getElementById("pdf-fecha-gen").innerText = new Date().toLocaleDateString();
+            document.getElementById("pdf-estudiante-nom").innerText = infoAlumno.nombre;
+            document.getElementById("pdf-estudiante-grado").innerText = infoAlumno.grado_new;
             
-            if (!telefono.startsWith('57') && telefono.length <= 10) {
-                telefono = '57' + telefono;
-            }
+            document.getElementById("pdf-tabla-body").innerHTML = citasAlumno.map(c => `
+                <tr>
+                    <td>${c.fecha_cita}</td>
+                    <td>${c.tipo_cita}</td>
+                    <td>${c.motivo}</td>
+                    <td>${c.compromisos}</td>
+                    <td>${c.acudiente}</td>
+                </tr>
+            `).join('');
 
-            const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-            
-            window.open(url, '_blank');
-            modalInstancia.hide();
+            const element = document.getElementById('pdf-template');
+            const opt = {
+                margin: 0.5,
+                filename: `Reporte_${infoAlumno.nombre.replace(/ /g,'_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Mostrar temporalmente para capturar, luego ocultar
+            document.getElementById("pdf-container").classList.remove("hidden");
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.getElementById("pdf-container").classList.add("hidden");
+            });
+        }
+
+        function abrirR(n) { document.getElementById("modal-nombre-estudiante").innerText = n; new bootstrap.Modal(document.getElementById('modalReporte')).show(); }
+
+        function enviarWhatsApp() {
+            const n = document.getElementById("modal-nombre-estudiante").innerText, f = document.getElementById("modal-falta").value, o = document.getElementById("modal-observacion").value;
+            const e = listaEstudiantes.find(x => x.nombre == n);
+            fetchAPI({ accion: "guardarReporte", datos: { fecha: new Date().toLocaleDateString(), estudiante: n, acudiente: e.acudiente, telefono: e.tel_acud, falta: f, observacion: o, docente: nombreDocenteActual } });
+            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent("Reporte: "+f+" de "+n+". "+o)}`, '_blank');
         }
     </script>
 </body>
