@@ -1281,7 +1281,7 @@ body {
 // CONFIGURACIÓN
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyREYM0EN-tsFuBCJ4L5NgEoJuvgcaJOtsvmzx0dajxn6YImx6cxnELmKAQOBU7b6Ab/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw8VU5kkuWR-Co0Crwl8cMa_SpVff543WP6oZO7TMBHi6V4-Yx_0AFkQle8TEyXNG0/exec';
 
 // ============================================================
 // ESTADO GLOBAL
@@ -1293,7 +1293,8 @@ const state = {
   estudiantes: [],
   citasHoy: [],
   novedadesActivas: [],  // estudiantes con novedad activa (excusa)
-  todasNovedades: []        // para edición en panel admin
+  todasNovedades: [],    // para edición en panel admin
+  asistenciaHoy: {}      // {estudiante_hora: estado} — registros ya guardados
 };
 
 // ============================================================
@@ -1507,9 +1508,29 @@ function switchAdminTab(sub) {
 // ASISTENCIA
 // ============================================================
 
-function cargarPlanilla() {
+async function cargarPlanilla() {
   const fechaEl = document.getElementById('asistFecha');
   if (!fechaEl.value) fechaEl.value = todayISO();
+  const fecha = fechaEl.value;
+
+  // Consultar registros ya guardados para esta fecha
+  showLoading(true);
+  try {
+    const res = await apiCall({ action: 'getAsistencia', fecha });
+    if (res.ok) {
+      // Indexar como objeto {nombreHora: estado} para acceso rápido
+      state.asistenciaHoy = {};
+      res.registros.forEach(r => {
+        state.asistenciaHoy[r.estudiante + '_' + r.hora] = r.estado;
+      });
+    }
+  } catch(e) {
+    // Si falla, seguir con planilla vacía
+    state.asistenciaHoy = {};
+  } finally {
+    showLoading(false);
+  }
+
   filtrarEstudiantes();
 }
 
@@ -1604,7 +1625,11 @@ function renderPlanilla(estudiantes) {
           opt.textContent = e.label;
           sel.appendChild(opt);
         });
-        sel.value = 'Asistió';
+        // Precargar estado guardado si existe para esta fecha
+        const claveGuardada = est.nombre + '_' + hora;
+        const estadoGuardado = state.asistenciaHoy[claveGuardada] || 'Asistió';
+        sel.value = estadoGuardado;
+        sel.className = 'estado-select ' + estadoCSSClass(estadoGuardado);
         sel.addEventListener('change', function () {
           this.className = 'estado-select ' + estadoCSSClass(this.value);
         });
@@ -1637,31 +1662,35 @@ async function guardarAsistencia() {
 
   const registros = [];
   selects.forEach(sel => {
-    const estado = sel.value;
-    if (estado && estado !== 'Asistió') { // Solo guarda los distintos de Asistió (o cambia según preferencia)
-      registros.push({
-        fecha,
-        hora: sel.dataset.hora,
-        estudiante: sel.dataset.est,
-        grado: sel.dataset.grado,
-        estado,
-        docente: state.nombre
-      });
-    }
-    // Para guardar TODOS (incluyendo asistió), elimina el if y usa el push directamente:
-    // registros.push({ fecha, hora: sel.dataset.hora, estudiante: sel.dataset.est, grado: sel.dataset.grado, estado, docente: state.nombre });
+    // Guardar TODOS los registros para que el backend pueda reemplazar la planilla completa
+    registros.push({
+      fecha,
+      hora:       sel.dataset.hora,
+      estudiante: sel.dataset.est,
+      grado:      sel.dataset.grado,
+      estado:     sel.value || 'Asistió',
+      docente:    state.nombre
+    });
   });
 
   if (registros.length === 0) {
-    showToast('No hay novedad que guardar (todos asistieron).', 'info');
+    showToast('No hay planilla cargada.', 'warning');
     return;
   }
 
   showLoading(true);
   try {
     const res = await apiCall({ action: 'saveAsistencia', registros });
-    if (res.ok) showToast(res.msg, 'success');
-    else showToast(res.msg, 'error');
+    if (res.ok) {
+      // Actualizar cache local
+      state.asistenciaHoy = {};
+      registros.forEach(r => {
+        state.asistenciaHoy[r.estudiante + '_' + r.hora] = r.estado;
+      });
+      showToast(res.msg, 'success');
+    } else {
+      showToast(res.msg, 'error');
+    }
   } catch (err) {
     showToast('Error al guardar: ' + err.message, 'error');
   } finally {
