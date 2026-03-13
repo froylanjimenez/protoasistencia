@@ -1,340 +1,1967 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGA - CESUM Montelíbano</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        :root { --psico: #6f42c1; --fuga: #212529; --retardo: #fd7e14; }
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-        .hidden { display: none !important; }
-        .badge-asist { width: 100%; font-weight: bold; font-size: 0.8rem; border-radius: 4px; padding: 4px; }
-        .color-asistio { background-color: #d1e7dd; color: #0f5132; }
-        .color-falla { background-color: #f8d7da; color: #842029; }
-        .color-excusa { background-color: #cff4fc; color: #055160; }
-        .color-fuga { background-color: #212529; color: #ffffff; }
-        .color-retardo { background-color: #fff3cd; color: #664d03; }
-        .color-citapsico { background-color: #e0cffc; color: #3d0a91; border: 2px dashed var(--psico); }
-        thead th { position: sticky; top: 0; background: #212529 !important; color: white; z-index: 10; }
-        .pdf-only { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CESUM – Sistema de Gestión Escolar</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+/* ============================================================
+   VARIABLES & RESET
+   ============================================================ */
+:root {
+  --bg-dark:    #0d1117;
+  --bg-card:    #161b22;
+  --bg-input:   #1c2330;
+  --border:     #30363d;
+  --accent:     #2563eb;
+  --accent-lt:  #3b82f6;
+  --accent-glow:#2563eb44;
+  --green:      #22c55e;
+  --red:        #ef4444;
+  --orange:     #f97316;
+  --yellow:     #eab308;
+  --purple:     #a855f7;
+  --text-1:     #f0f6fc;
+  --text-2:     #8b949e;
+  --text-3:     #484f58;
+  --radius:     10px;
+  --shadow:     0 4px 24px #00000060;
+
+  /* Estados asistencia */
+  --c-asistio:  #22c55e;
+  --c-falla:    #ef4444;
+  --c-excusa:   #3b82f6;
+  --c-fuga:     #18181b;
+  --c-retardo:  #f97316;
+  --c-psico:    #a855f7;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-1);
+  min-height: 100vh;
+}
+
+/* ============================================================
+   LAYOUT GENERAL
+   ============================================================ */
+#app { min-height: 100vh; }
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, #1e3a5f55 0%, transparent 70%),
+              var(--bg-dark);
+}
+
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow), 0 0 60px #2563eb18;
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-logo .escudo {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #2563eb, #a855f7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 2rem;
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+.login-logo h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.2;
+}
+
+.login-logo p {
+  font-size: .8rem;
+  color: var(--text-2);
+  margin-top: .25rem;
+}
+
+.form-label {
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: .4rem;
+}
+
+.form-control, .form-select {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-1) !important;
+  border-radius: var(--radius) !important;
+  font-family: 'Outfit', sans-serif;
+  font-size: .95rem;
+  padding: .6rem .9rem;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+  outline: none;
+}
+
+.form-control::placeholder { color: var(--text-3) !important; }
+
+.btn-primary-cesum {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: #fff;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+  padding: .65rem 1.5rem;
+  transition: background .2s, transform .1s, box-shadow .2s;
+  cursor: pointer;
+}
+
+.btn-primary-cesum:hover {
+  background: var(--accent-lt);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.btn-primary-cesum:active { transform: scale(.97); }
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+.cesum-navbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: .75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.cesum-navbar .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.cesum-navbar .brand span {
+  font-size: .75rem;
+  font-weight: 400;
+  color: var(--text-2);
+  display: block;
+}
+
+.nav-tabs-cesum {
+  display: flex;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+
+.nav-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-family: 'Outfit', sans-serif;
+  font-size: .85rem;
+  font-weight: 500;
+  padding: .4rem .9rem;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.nav-tab-btn:hover { background: var(--bg-input); color: var(--text-1); }
+
+.nav-tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.nav-tab-btn.hidden { display: none; }
+
+.cesum-navbar .user-info {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.user-badge {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .35rem .75rem;
+  font-size: .8rem;
+  color: var(--text-2);
+}
+
+.user-badge strong { color: var(--text-1); }
+
+#btnLogout {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: .8rem;
+  font-family: 'Outfit', sans-serif;
+  padding: .35rem .75rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+#btnLogout:hover { border-color: var(--red); color: var(--red); }
+
+/* ============================================================
+   CONTENIDO PRINCIPAL
+   ============================================================ */
+.main-content {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+.cesum-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.cesum-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.cesum-card-header h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+}
+
+/* ============================================================
+   BOTONES AUXILIARES
+   ============================================================ */
+.btn-cesum {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: .85rem;
+  padding: .45rem 1rem;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.btn-cesum.sm { font-size: .78rem; padding: .3rem .7rem; }
+
+.btn-cesum-primary  { background: var(--accent);  color: #fff; }
+.btn-cesum-success  { background: var(--green);   color: #fff; }
+.btn-cesum-danger   { background: var(--red);     color: #fff; }
+.btn-cesum-warning  { background: var(--orange);  color: #fff; }
+.btn-cesum-purple   { background: var(--purple);  color: #fff; }
+.btn-cesum-secondary{ background: var(--bg-input); color: var(--text-2); border: 1px solid var(--border); }
+
+.btn-cesum:hover { opacity: .88; transform: translateY(-1px); }
+.btn-cesum:active { transform: scale(.97); }
+
+/* ============================================================
+   ASISTENCIA – PLANILLA
+   ============================================================ */
+#asistenciaTab .filtros {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  align-items: flex-end;
+}
+
+#asistenciaTab .filtros .form-group { flex: 1; min-width: 160px; }
+
+.asis-table-wrap { overflow-x: auto; }
+
+.asis-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .85rem;
+}
+
+.asis-table th {
+  background: var(--bg-input);
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: .6rem .9rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.asis-table th:first-child { text-align: left; }
+
+.asis-table td {
+  padding: .45rem .5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  text-align: center;
+}
+
+.asis-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  padding-left: .9rem;
+}
+
+.asis-table tr:last-child td { border-bottom: none; }
+
+.asis-table tr:hover td { background: #ffffff08; }
+
+/* Selector de estado por hora */
+.estado-select {
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .78rem;
+  font-weight: 500;
+  padding: .25rem .4rem;
+  cursor: pointer;
+  min-width: 110px;
+  transition: all .15s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238b949e' d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .4rem center;
+  background-size: 10px;
+  padding-right: 1.4rem;
+}
+
+/* Colores según estado */
+.estado-asistio   { background: #166534 !important; color: #4ade80 !important; border-color: #22c55e !important; }
+.estado-falla     { background: #7f1d1d !important; color: #fca5a5 !important; border-color: #ef4444 !important; }
+.estado-excusa    { background: #1e3a5f !important; color: #93c5fd !important; border-color: #3b82f6 !important; }
+.estado-fuga      { background: #18181b !important; color: #fafafa !important; border-color: #71717a !important; }
+.estado-retardo   { background: #7c2d12 !important; color: #fdba74 !important; border-color: #f97316 !important; }
+.estado-psico     { background: #4a1d96 !important; color: #d8b4fe !important; border-color: #a855f7 !important; }
+
+.estado-select:disabled {
+  opacity: .85;
+  cursor: not-allowed;
+}
+
+/* Badge de grado en tabla */
+.grado-badge {
+  display: inline-block;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: .72rem;
+  font-family: 'JetBrains Mono', monospace;
+  padding: .1rem .45rem;
+  color: var(--text-2);
+  margin-left: .4rem;
+}
+
+/* Botón reporte en fila */
+.btn-reporte-fila {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: .78rem;
+  padding: .2rem .5rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.btn-reporte-fila:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: #7c2d1220;
+}
+
+/* Leyenda de colores */
+.leyenda-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .75rem;
+  color: var(--text-2);
+}
+
+.leyenda-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   ESTADÍSTICAS
+   ============================================================ */
+.stat-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .85rem;
+}
+
+.stat-table th {
+  background: var(--bg-input);
+  color: var(--text-2);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: .6rem .9rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat-table th:first-child, .stat-table td:first-child { text-align: left; }
+
+.stat-table td {
+  padding: .5rem .9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-1);
+}
+
+.stat-table tr:last-child td { border-bottom: none; }
+
+.stat-table tr:hover td { background: #ffffff06; }
+
+.stat-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+}
+
+.stat-val.danger  { color: var(--red); }
+.stat-val.warning { color: var(--orange); }
+.stat-val.info    { color: var(--accent-lt); }
+.stat-val.muted   { color: var(--yellow); }
+.stat-val.purple  { color: var(--purple); }
+.stat-val.zero    { color: var(--text-3); }
+
+.stat-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat-summary-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .9rem 1rem;
+  text-align: center;
+}
+
+.stat-summary-card .num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+
+.stat-summary-card .lbl {
+  font-size: .78rem;
+  color: var(--text-2);
+  margin-top: .25rem;
+}
+
+/* ============================================================
+   PSICOLOGÍA
+   ============================================================ */
+.citas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: .75rem;
+}
+
+.cita-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all .18s;
+  position: relative;
+}
+
+.cita-card:hover {
+  border-color: var(--purple);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px #a855f720;
+}
+
+.cita-card .cita-nombre {
+  font-weight: 600;
+  font-size: .95rem;
+  color: var(--text-1);
+  margin-bottom: .35rem;
+}
+
+.cita-card .cita-meta {
+  font-size: .8rem;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin-bottom: .2rem;
+}
+
+.cita-card .cita-estado {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  font-size: .7rem;
+  font-weight: 600;
+  padding: .2rem .6rem;
+  border-radius: 20px;
+  background: #4a1d9630;
+  color: #d8b4fe;
+  border: 1px solid #a855f740;
+}
+
+.cita-card .cita-estado.completada {
+  background: #16653430;
+  color: #4ade80;
+  border-color: #22c55e40;
+}
+
+/* ============================================================
+   NOVEDADES
+   ============================================================ */
+.novedad-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px 130px;
+  gap: .5rem;
+  padding: .7rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: .85rem;
+}
+
+.novedad-row:last-child { border-bottom: none; }
+
+.novedad-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .18rem .55rem;
+  border-radius: 20px;
+}
+
+.novedad-badge.activa   { background: #16653430; color: #4ade80; }
+.novedad-badge.inactiva { background: #7f1d1d30; color: #fca5a5; }
+.novedad-badge.pendiente{ background: #7c2d1230; color: #fdba74; }
+
+/* ============================================================
+   MODALES
+   ============================================================ */
+.modal-cesum .modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text-1);
+}
+
+.modal-cesum .modal-header {
+  border-bottom: 1px solid var(--border);
+  padding: 1.1rem 1.4rem;
+}
+
+.modal-cesum .modal-title {
+  font-weight: 600;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.modal-cesum .modal-footer {
+  border-top: 1px solid var(--border);
+  padding: .9rem 1.4rem;
+}
+
+.modal-cesum .btn-close {
+  filter: invert(1) opacity(.5);
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast-cesum {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  min-width: 280px;
+  max-width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: .9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  box-shadow: var(--shadow);
+  transform: translateX(110%);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  font-size: .9rem;
+}
+
+.toast-cesum.show { transform: translateX(0); }
+.toast-cesum .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+.toast-cesum.success { border-left: 3px solid var(--green); }
+.toast-cesum.error   { border-left: 3px solid var(--red); }
+.toast-cesum.info    { border-left: 3px solid var(--accent); }
+.toast-cesum.warning { border-left: 3px solid var(--orange); }
+
+/* ============================================================
+   SPINNER
+   ============================================================ */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: #0d111799;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  display: none;
+}
+
+.loading-overlay.show { display: flex; }
+
+.spinner-cesum {
+  width: 44px; height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   PDF / ACTA
+   ============================================================ */
+#actaContainer {
+  display: none;
+  background: #fff;
+  color: #111;
+  padding: 2rem;
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+#actaContainer h2 {
+  text-align: center;
+  font-size: 14pt;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-bottom: .25rem;
+}
+
+#actaContainer .acta-subtitulo {
+  text-align: center;
+  font-size: 11pt;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: .5rem;
+}
+
+#actaContainer .acta-datos {
+  margin-bottom: 1rem;
+  line-height: 1.8;
+}
+
+#actaContainer .acta-firmas {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 3rem;
+  text-align: center;
+}
+
+#actaContainer .firma-linea {
+  border-top: 1px solid #333;
+  width: 180px;
+  padding-top: .5rem;
+  font-size: 10pt;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .cesum-navbar { padding: .6rem 1rem; }
+  .main-content { padding: 1rem .75rem; }
+  .nav-tab-btn span { display: none; }
+  .novedad-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
 </head>
 <body>
 
-    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">CESUM - GESTIÓN ESCOLAR</a>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" id="tab-asistencia" onclick="cambiarVista('asistencia')">Asistencia</a></li>
-                    <li class="nav-item"><a class="nav-link" id="tab-psico" onclick="cambiarVista('psico')">Psicología / Coord.</a></li>
-                    <li class="nav-item"><a class="nav-link" id="tab-estadisticas" onclick="cambiarVista('estadisticas')">Estadísticas</a></li>
-                </ul>
-                <span class="navbar-text me-3 text-white fw-bold" id="welcome-message"></span>
-                <button onclick="location.reload()" class="btn btn-sm btn-outline-danger">Salir</button>
-            </div>
-        </div>
-    </nav>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner-cesum"></div>
+</div>
 
-    <div id="login-section" class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
-                <div class="card shadow border-0">
-                    <div class="card-body p-4 text-center">
-                        <h4 class="mb-4">Acceso Institucional</h4>
-                        <input type="text" id="username" class="form-control mb-3" placeholder="Usuario">
-                        <input type="password" id="password" class="form-control mb-3" placeholder="Contraseña">
-                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 fw-bold">Entrar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Toast -->
+<div class="toast-cesum" id="toastEl">
+  <span class="toast-icon" id="toastIcon">✓</span>
+  <span id="toastMsg">Mensaje</span>
+</div>
+
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
+<div id="loginScreen" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="escudo">🏫</div>
+      <h1>CESUM</h1>
+      <p>Concentración Educativa del Sur de Montelíbano</p>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Usuario</label>
+      <input type="text" id="loginUsuario" class="form-control" placeholder="Ej: jperez">
+    </div>
+    <div class="mb-4">
+      <label class="form-label">Contraseña</label>
+      <input type="password" id="loginPassword" class="form-control" placeholder="••••••">
+    </div>
+    <button class="btn-primary-cesum w-100" onclick="handleLogin()">
+      <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
+    </button>
+    <p id="loginError" class="text-danger text-center mt-3 small" style="display:none"></p>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SCREEN
+     ============================================================ -->
+<div id="appScreen" class="screen">
+
+  <!-- Navbar -->
+  <nav class="cesum-navbar">
+    <div class="brand">
+      <span>🏫</span>
+      <div>
+        CESUM
+        <span>Sistema de Gestión Escolar</span>
+      </div>
     </div>
 
-    <div id="asistencia-section" class="container-fluid mt-3 hidden">
-        <div class="card shadow-sm mb-3">
-            <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                <div class="small text-muted">✓ Asistió | Falla | Excusa | Fuga | Retardo</div>
-                <div class="d-flex">
-                    <select id="filtro-grado" class="form-select form-select-sm" onchange="renderizarTabla()" style="width: 200px;"></select>
-                    <button onclick="cargarDatos()" class="btn btn-sm btn-secondary ms-2"><i class="fas fa-sync"></i></button>
-                </div>
+    <div class="nav-tabs-cesum">
+      <button class="nav-tab-btn active" id="tabAsistencia" onclick="switchTab('asistencia')">
+        <i class="bi bi-person-check"></i><span>Asistencia</span>
+      </button>
+      <button class="nav-tab-btn" id="tabEstadisticas" onclick="switchTab('estadisticas')">
+        <i class="bi bi-bar-chart-line"></i><span>Estadísticas</span>
+      </button>
+      <button class="nav-tab-btn" id="tabPsicologia" onclick="switchTab('psicologia')">
+        <i class="bi bi-heart-pulse"></i><span>Psicología</span>
+      </button>
+      <button class="nav-tab-btn hidden" id="tabNovedades" onclick="switchTab('novedades')">
+        <i class="bi bi-bell"></i><span>Novedades</span>
+      </button>
+    </div>
+
+    <div class="user-info">
+      <div class="user-badge">
+        <strong id="navNombre">Docente</strong>
+      </div>
+      <button id="btnLogout" onclick="handleLogout()">
+        <i class="bi bi-box-arrow-left"></i> Salir
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="main-content">
+
+    <!-- ========== ASISTENCIA ========== -->
+    <div id="asistenciaTab" class="tab-content">
+      <div class="cesum-card">
+        <div class="cesum-card-header">
+          <h5><i class="bi bi-person-check-fill"></i> Planilla de Asistencia</h5>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn-cesum btn-cesum-success" onclick="guardarAsistencia()">
+              <i class="bi bi-cloud-upload"></i> Guardar
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filtros">
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input type="date" id="asistFecha" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grado</label>
+            <select id="asistGrado" class="form-select" onchange="filtrarEstudiantes()">
+              <option value="">-- Todos --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Buscar</label>
+            <input type="text" id="asistBuscar" class="form-control" placeholder="Nombre..." oninput="filtrarEstudiantes()">
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end">
+            <button class="btn-cesum btn-cesum-primary" onclick="cargarPlanilla()">
+              <i class="bi bi-arrow-clockwise"></i> Cargar
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="asis-table-wrap">
+          <table class="asis-table" id="asisTable">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
+                <th>Reporte</th>
+              </tr>
+            </thead>
+            <tbody id="asisBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="leyenda-wrap mt-2">
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#22c55e"></div>Asistió (✓)</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#ef4444"></div>Falla</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#3b82f6"></div>Excusa</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#27272a"></div>Fuga</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#f97316"></div>Retardo</div>
+          <div class="leyenda-item"><div class="leyenda-dot" style="background:#a855f7"></div>Cita Psico</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ESTADÍSTICAS ========== -->
+    <div id="estadisticasTab" class="tab-content" style="display:none">
+      <div class="cesum-card">
+        <div class="cesum-card-header">
+          <h5><i class="bi bi-bar-chart-line-fill"></i> Estadísticas de Inasistencia y Conducta</h5>
+          <button class="btn-cesum btn-cesum-primary" onclick="cargarEstadisticas()">
+            <i class="bi bi-arrow-clockwise"></i> Actualizar
+          </button>
+        </div>
+        <div class="stat-summary-grid" id="statSummary"></div>
+        <div style="overflow-x:auto">
+          <table class="stat-table" id="statTable">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Grado</th>
+                <th>Fallas</th>
+                <th>Fugas</th>
+                <th>Retardos</th>
+                <th>Excusas</th>
+                <th>Reportes WA</th>
+              </tr>
+            </thead>
+            <tbody id="statBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PSICOLOGÍA ========== -->
+    <div id="psicologiaTab" class="tab-content" style="display:none">
+      <div class="row g-3">
+
+        <!-- Agendar cita -->
+        <div class="col-lg-4">
+          <div class="cesum-card h-100">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-calendar-plus"></i> Agendar Cita</h5>
             </div>
-        </div>
-        <div class="card shadow-sm border-0 table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                    <tr><th>Estudiante</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th class="text-center">Reporte</th></tr>
-                </thead>
-                <tbody id="tabla-estudiantes"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="psico-section" class="container mt-4 hidden">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-primary text-white fw-bold">Citar Estudiante</div>
-                    <div class="card-body">
-                        <input class="form-control mb-2" list="datalist-estudiantes" id="p-est" placeholder="Buscar Estudiante...">
-                        <div class="row">
-                            <div class="col-6"><input type="date" id="p-fecha" class="form-control mb-2"></div>
-                            <div class="col-6">
-                                <select id="p-hora" class="form-select mb-2">
-                                    <option value="H1">H1</option><option value="H2">H2</option><option value="H3">H3</option>
-                                    <option value="H4">H4</option><option value="H5">H5</option><option value="H6">H6</option>
-                                </select>
-                            </div>
-                        </div>
-                        <textarea id="p-motivo" class="form-control mb-3" placeholder="Motivo de la cita..."></textarea>
-                        <button onclick="agendarCita()" class="btn btn-success w-100 fw-bold">Agendar y Notificar WA</button>
-                    </div>
-                </div>
+            <div class="mb-3">
+              <label class="form-label">Estudiante</label>
+              <select id="citaEstudiante" class="form-select">
+                <option value="">-- Seleccionar --</option>
+              </select>
             </div>
-            <div class="col-md-8">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-dark text-white fw-bold">Citaciones Pendientes</div>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead><tr><th>Estudiante</th><th>Fecha</th><th>Hora</th><th>Acción</th></tr></thead>
-                            <tbody id="lista-pendientes"></tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="mb-3">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="citaFecha" class="form-control">
             </div>
-        </div>
-    </div>
-
-    <div id="estadisticas-section" class="container mt-4 hidden">
-        <button onclick="generarEstadisticas()" class="btn btn-primary mb-4" id="btn-calc"><i class="fas fa-calculator me-2"></i>Calcular Métricas</button>
-        <div class="row" id="stats-cards"></div>
-        <div class="card shadow-sm border-0 mt-3">
-            <table class="table table-hover text-center">
-                <thead class="table-light"><tr><th>Estudiante</th><th>Fallas</th><th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Alertas WA</th></tr></thead>
-                <tbody id="tabla-stats"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="modal fade" id="modalPsico" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white"><h5>Descargos y Compromisos</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <p>Estudiante: <strong id="desc-nom"></strong></p>
-                    <input type="hidden" id="desc-id">
-                    <label class="fw-bold small">Acudiente presente:</label>
-                    <input type="text" id="desc-acu" class="form-control mb-2">
-                    <label class="fw-bold small">Informe de la cita:</label>
-                    <textarea id="desc-inf" class="form-control mb-2" rows="3"></textarea>
-                    <label class="fw-bold small">Compromisos adquiridos:</label>
-                    <textarea id="desc-com" class="form-control mb-3" rows="3"></textarea>
-                    <button onclick="guardarDescargos()" class="btn btn-primary w-100 mb-2">Guardar en Base de Datos</button>
-                    <button onclick="exportarPDF()" class="btn btn-outline-danger w-100">Generar Acta PDF para Firma</button>
-                </div>
+            <div class="mb-3">
+              <label class="form-label">Hora</label>
+              <select id="citaHora" class="form-select">
+                <option value="H1">H1 – 1ª hora</option>
+                <option value="H2">H2 – 2ª hora</option>
+                <option value="H3">H3 – 3ª hora</option>
+                <option value="H4">H4 – 4ª hora</option>
+                <option value="H5">H5 – 5ª hora</option>
+                <option value="H6">H6 – 6ª hora</option>
+              </select>
             </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="modalWA" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-warning"><h5>Reportar a Acudiente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <p>Estudiante: <strong id="wa-nom"></strong></p>
-                    <select id="wa-falta" class="form-select mb-3">
-                        <option value="Llegada tarde">Llegada tarde</option>
-                        <option value="Desorden en clase">Desorden en clase</option>
-                        <option value="No trajo materiales">No trajo materiales</option>
-                        <option value="Fuga detectada">Fuga detectada</option>
-                        <option value="Incumplimiento de uniforme">Incumplimiento de uniforme</option>
-                    </select>
-                    <textarea id="wa-obs" class="form-control mb-3" placeholder="Observaciones adicionales..."></textarea>
-                    <button onclick="confirmarReporteWA()" class="btn btn-success w-100">Enviar WhatsApp</button>
-                </div>
+            <div class="mb-3">
+              <label class="form-label">Motivo</label>
+              <textarea id="citaMotivo" class="form-control" rows="3" placeholder="Descripción del motivo..."></textarea>
             </div>
+            <button class="btn-cesum btn-cesum-purple w-100" onclick="agendarCita()">
+              <i class="bi bi-calendar-check"></i> Agendar y Notificar
+            </button>
+          </div>
         </div>
+
+        <!-- Citas pendientes -->
+        <div class="col-lg-8">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-hourglass-split"></i> Citas Pendientes</h5>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarCitasPendientes()">
+                <i class="bi bi-arrow-clockwise"></i> Refrescar
+              </button>
+            </div>
+            <div class="citas-grid" id="citasGrid">
+              <p style="color:var(--text-2);font-size:.85rem">Cargando citas...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <div id="pdf-area" class="pdf-only" style="padding: 40px; font-family: Arial;">
-        <div style="text-align:center; border-bottom: 2px solid #000; margin-bottom: 20px;">
-            <h3>CONCENTRACIÓN EDUCATIVA DEL SUR DE MONTELÍBANO</h3>
-            <h4>ACTA DE COMPROMISO PSICOPEDAGÓGICO / DISCIPLINARIO</h4>
+    <!-- ========== NOVEDADES (Admin) ========== -->
+    <div id="novedadesTab" class="tab-content" style="display:none">
+      <div class="row g-3">
+
+        <div class="col-lg-4">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-plus-circle"></i> Nueva Novedad</h5>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Estudiante</label>
+              <select id="novEstudiante" class="form-select">
+                <option value="">-- Seleccionar --</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Inicio</label>
+              <input type="date" id="novInicio" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Fin</label>
+              <input type="date" id="novFin" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Estado</label>
+              <select id="novEstado" class="form-select">
+                <option value="Activa">Activa</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Inactiva">Inactiva</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Motivo</label>
+              <textarea id="novMotivo" class="form-control" rows="3" placeholder="Descripción..."></textarea>
+            </div>
+            <button class="btn-cesum btn-cesum-primary w-100" onclick="guardarNovedad()">
+              <i class="bi bi-save"></i> Guardar Novedad
+            </button>
+          </div>
         </div>
-        <p><strong>Fecha:</strong> <span id="pdf-fecha"></span></p>
-        <p><strong>Estudiante:</strong> <span id="pdf-est"></span></p>
-        <p><strong>Acudiente Presente:</strong> <span id="pdf-acu"></span></p>
-        <hr>
-        <h5>INFORME DE LA SITUACIÓN:</h5>
-        <p id="pdf-inf" style="text-align: justify;"></p>
-        <h5>COMPROMISOS ADQUIRIDOS:</h5>
-        <p id="pdf-com" style="text-align: justify; border: 1px solid #ccc; padding: 10px;"></p>
-        <div style="margin-top: 80px; display: flex; justify-content: space-between;">
-            <div style="width: 200px; border-top: 1px solid #000; text-align: center;">Firma Institución</div>
-            <div style="width: 200px; border-top: 1px solid #000; text-align: center;">Firma Acudiente</div>
+
+        <div class="col-lg-8">
+          <div class="cesum-card">
+            <div class="cesum-card-header">
+              <h5><i class="bi bi-bell-fill"></i> Novedades Registradas</h5>
+              <button class="btn-cesum btn-cesum-secondary sm" onclick="cargarNovedades()">
+                <i class="bi bi-arrow-clockwise"></i> Refrescar
+              </button>
+            </div>
+            <div id="novedadesLista">
+              <p style="color:var(--text-2);font-size:.85rem">Cargando...</p>
+            </div>
+          </div>
         </div>
+
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const API_URL = "https://script.google.com/macros/s/TU_NUEVA_URL_AQUI/exec";
-        let userDocente = "", listaEstudiantes = [], listaNovedades = [], listaCitaciones = [];
+  </div><!-- /main-content -->
+</div><!-- /appScreen -->
 
-        async function fetchAPI(datos) {
-            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(datos) });
-            return await res.json();
-        }
+<!-- ============================================================
+     MODAL: REPORTE DISCIPLINARIO
+     ============================================================ -->
+<div class="modal fade modal-cesum" id="modalReporte" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Reporte Disciplinario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="mb-3 text-muted small">Estudiante: <strong id="reporteEstNombre" class="text-white"></strong></p>
+        <div class="mb-3">
+          <label class="form-label">Tipo de Falta</label>
+          <select id="reporteFalta" class="form-select">
+            <option value="">-- Seleccionar falta --</option>
+            <option value="Agresión verbal">Agresión verbal</option>
+            <option value="Agresión física">Agresión física</option>
+            <option value="Irrespeto al docente">Irrespeto al docente</option>
+            <option value="Uso de celular en clase">Uso de celular en clase</option>
+            <option value="Daño a material escolar">Daño a material escolar</option>
+            <option value="Fuga del aula">Fuga del aula</option>
+            <option value="Vocabulario soez">Vocabulario soez</option>
+            <option value="Bullying / matoneo">Bullying / matoneo</option>
+            <option value="Consumo de sustancias">Consumo de sustancias</option>
+            <option value="Otra falta">Otra falta</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Observaciones</label>
+          <textarea id="reporteObs" class="form-control" rows="4" placeholder="Describa el incidente con detalle..."></textarea>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="reporteWhatsapp" checked>
+          <label class="form-check-label small text-muted" for="reporteWhatsapp">Enviar notificación WhatsApp al acudiente</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-danger" onclick="confirmarReporte()">
+          <i class="bi bi-send"></i> Confirmar Reporte
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        async function iniciarSesion() {
-            const u = document.getElementById("username").value, p = document.getElementById("password").value;
-            const res = await fetchAPI({ accion: "login", usuario: u, password: p });
-            if (res.exito) {
-                userDocente = res.nombreDocente;
-                document.getElementById("login-section").classList.add("hidden");
-                document.getElementById("main-nav").classList.remove("hidden");
-                document.getElementById("welcome-message").innerText = userDocente;
-                cambiarVista('asistencia');
-                cargarDatos();
-            } else alert("Error de acceso");
-        }
+<!-- ============================================================
+     MODAL: DESCARGOS / COMPLETAR CITA
+     ============================================================ -->
+<div class="modal fade modal-cesum" id="modalDescargos" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clipboard2-check-fill text-purple me-2"></i>Descargos y Compromisos</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label">Estudiante</label>
+            <input type="text" id="descargosEst" class="form-control" readonly>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Fecha Cita</label>
+            <input type="text" id="descargosFecha" class="form-control" readonly>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Hora</label>
+            <input type="text" id="descargosHora" class="form-control" readonly>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Acudiente presente</label>
+          <select id="descargosAcudiente" class="form-select">
+            <option value="Sí">Sí</option>
+            <option value="No">No</option>
+            <option value="Parcial">Parcial</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Informe / Diagnóstico</label>
+          <textarea id="descargosInforme" class="form-control" rows="4" placeholder="Descripción del caso, observaciones del orientador..."></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Compromisos</label>
+          <textarea id="descargosCompromisos" class="form-control" rows="3" placeholder="Acuerdos y compromisos establecidos..."></textarea>
+        </div>
+        <input type="hidden" id="descargosIdCita">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cesum btn-cesum-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn-cesum btn-cesum-warning" onclick="generarActa()">
+          <i class="bi bi-file-earmark-pdf"></i> Vista Previa Acta
+        </button>
+        <button class="btn-cesum btn-cesum-success" onclick="completarCita()">
+          <i class="bi bi-check-circle"></i> Guardar y Completar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        async function cargarDatos() {
-            const res = await fetchAPI({ accion: "obtenerDatosIniciales" });
-            listaEstudiantes = res.estudiantes;
-            listaNovedades = res.novedades;
-            listaCitaciones = res.citaciones;
-            llenarFiltros();
-            renderizarTabla();
-            renderizarPendientes();
-        }
+<!-- Acta PDF (oculta, solo para html2pdf) -->
+<div id="actaContainer"></div>
 
-        function cambiarVista(v) {
-            ['asistencia', 'psico', 'estadisticas'].forEach(x => document.getElementById(x + '-section').classList.add('hidden'));
-            document.getElementById(v + '-section').classList.remove('hidden');
-        }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============================================================
+// CONFIGURACIÓN
+// ============================================================
 
-        function llenarFiltros() {
-            const s = document.getElementById("filtro-grado");
-            const g = [...new Set(listaEstudiantes.map(e => e.grado_new))].sort();
-            s.innerHTML = g.map(x => `<option value="${x}">${x}</option>`).join('');
-            
-            const dl = document.getElementById("datalist-estudiantes") || document.createElement('datalist');
-            dl.id = "datalist-estudiantes";
-            dl.innerHTML = listaEstudiantes.map(e => `<option value="${e.nombre}">`).join('');
-            document.body.appendChild(dl);
-        }
+const API_URL = 'https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec';
 
-        function renderizarTabla() {
-            const g = document.getElementById("filtro-grado").value;
-            const hoy = new Date().toLocaleDateString('en-CA');
-            const tbody = document.getElementById("tabla-estudiantes");
-            tbody.innerHTML = "";
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+const state = {
+  usuario: null,
+  nombre: null,
+  isAdmin: false,
+  estudiantes: [],
+  citasHoy: []
+};
 
-            listaEstudiantes.filter(e => e.grado_new == g).forEach(est => {
-                let fila = `<tr><td><div class="fw-bold">${est.nombre}</div></td>`;
-                for(let i=1; i<=6; i++) {
-                    const h = "H" + i;
-                    const cita = listaCitaciones.find(c => c[1] == est.nombre && c[2] == hoy && c[3] == h);
-                    let def = cita ? "Cita Psico" : "Asistió";
-                    fila += `<td><select class="form-select form-select-sm badge-asist color-${def.toLowerCase().replace(' ', '')}" onchange="marcarAsist(this, '${est.nombre}', '${h}')">
-                        <option value="Asistió" ${def=='Asistió'?'selected':''}>✓</option>
-                        <option value="Falla" ${def=='Falla'?'selected':''}>Falla</option>
-                        <option value="Excusa" ${def=='Excusa'?'selected':''}>Excusa</option>
-                        <option value="Fuga" ${def=='Fuga'?'selected':''}>Fuga</option>
-                        <option value="Retardo" ${def=='Retardo'?'selected':''}>Retardo</option>
-                        <option value="Cita Psico" ${def=='Cita Psico'?'selected':''}>Psico</option>
-                    </select></td>`;
-                }
-                fila += `<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="abrirWA('${est.nombre}')"><i class="fas fa-bullhorn"></i></button></td></tr>`;
-                tbody.innerHTML += fila;
-            });
-        }
+// ============================================================
+// UTILIDADES
+// ============================================================
 
-        function marcarAsist(sel, est, h) {
-            sel.className = "form-select form-select-sm badge-asist color-" + sel.value.toLowerCase().replace(' ', '');
-            fetchAPI({ accion: "guardarAsistencia", datos: { fecha: new Date().toLocaleDateString('es-ES'), hora: h, estudiante: est, grado: document.getElementById("filtro-grado").value, estado: sel.value, docente: userDocente } });
-        }
+function showLoading(v) {
+  document.getElementById('loadingOverlay').classList.toggle('show', v);
+}
 
-        // REPORTE WA
-        function abrirWA(nom) {
-            document.getElementById("wa-nom").innerText = nom;
-            new bootstrap.Modal(document.getElementById('modalWA')).show();
-        }
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const el = document.getElementById('toastEl');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = icons[type] || '✅';
+  el.className = `toast-cesum ${type}`;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 4000);
+}
 
-        function confirmarReporteWA() {
-            const n = document.getElementById("wa-nom").innerText;
-            const f = document.getElementById("wa-falta").value;
-            const o = document.getElementById("wa-obs").value;
-            const e = listaEstudiantes.find(x => x.nombre == n);
-            const msg = `SGA CESUM: Se reporta que ${n} presenta: ${f}. Obs: ${o}. Atentamente, ${userDocente}.`;
-            
-            fetchAPI({ accion: "guardarReporte", datos: { fecha: new Date().toLocaleDateString(), estudiante: n, acudiente: e.acudiente, telefono: e.tel_acud, falta: f, observacion: o, docente: userDocente } });
-            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
+async function apiCall(data) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return res.json();
+}
 
-        // PSICO
-        async function agendarCita() {
-            const d = { estudiante: document.getElementById("p-est").value, fecha_cita: document.getElementById("p-fecha").value, hora: document.getElementById("p-hora").value, motivo: document.getElementById("p-motivo").value };
-            await fetchAPI({ accion: "guardarCitacion", datos: d });
-            const e = listaEstudiantes.find(x => x.nombre == d.estudiante);
-            const msg = `CITACIÓN CESUM: Se cita a ${d.estudiante} y acudiente para el día ${d.fecha_cita} (${d.hora}). Motivo: ${d.motivo}. Agradecemos puntualidad.`;
-            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-            cargarDatos();
-        }
+function formatDate(d) {
+  return d ? d.toString().substring(0, 10) : '';
+}
 
-        function renderizarPendientes() {
-            document.getElementById("lista-pendientes").innerHTML = listaCitaciones.filter(c => c[8] == 'Pendiente').map(c => `
-                <tr><td>${c[1]}</td><td>${c[2]}</td><td>${c[3]}</td>
-                <td><button class="btn btn-xs btn-primary" onclick="abrirDescargos('${c[0]}','${c[1]}')">Realizar Descargos</button></td></tr>
-            `).join('');
-        }
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
-        function abrirDescargos(id, nom) {
-            document.getElementById("desc-id").value = id;
-            document.getElementById("desc-nom").innerText = nom;
-            new bootstrap.Modal(document.getElementById('modalPsico')).show();
-        }
+// ============================================================
+// LOGIN
+// ============================================================
 
-        async function guardarDescargos() {
-            const d = { id_cita: document.getElementById("desc-id").value, acudiente_asiste: document.getElementById("desc-acu").value, informe_cita: document.getElementById("desc-inf").value, compromisos: document.getElementById("desc-com").value };
-            await fetchAPI({ accion: "guardarDescargos", datos: d });
-            alert("Guardado con éxito");
-            cargarDatos();
-        }
+async function handleLogin() {
+  const usuario = document.getElementById('loginUsuario').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
 
-        function exportarPDF() {
-            document.getElementById("pdf-fecha").innerText = new Date().toLocaleDateString();
-            document.getElementById("pdf-est").innerText = document.getElementById("desc-nom").innerText;
-            document.getElementById("pdf-acu").innerText = document.getElementById("desc-acu").value;
-            document.getElementById("pdf-inf").innerText = document.getElementById("desc-inf").value;
-            document.getElementById("pdf-com").innerText = document.getElementById("desc-com").value;
-            
-            const opt = { margin: 1, filename: 'Acta_Compromiso.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-            html2pdf().set(opt).from(document.getElementById("pdf-area")).save();
-        }
+  if (!usuario || !password) {
+    errEl.textContent = 'Completa todos los campos.';
+    errEl.style.display = 'block';
+    return;
+  }
 
-        // ESTADÍSTICAS
-        async function generarEstadisticas() {
-            const res = await fetchAPI({ accion: "obtenerEstadisticas" });
-            const asist = res.asistencias, reps = res.reportes;
-            let st = {};
-            asist.forEach(a => {
-                if(!st[a.estudiante]) st[a.estudiante] = { f:0, fug:0, r:0, e:0, wa:0, g:a.grado };
-                if(a.estado=='Falla') st[a.estudiante].f++;
-                if(a.estado=='Fuga') st[a.estudiante].fug++;
-                if(a.estado=='Retardo') st[a.estudiante].r++;
-                if(a.estado=='Excusa') st[a.estudiante].e++;
-            });
-            reps.forEach(r => { if(st[r.estudiante]) st[r.estudiante].wa++; });
+  showLoading(true);
+  try {
+    const res = await apiCall({ action: 'login', usuario, password });
+    if (!res.ok) {
+      errEl.textContent = res.msg;
+      errEl.style.display = 'block';
+      return;
+    }
+    state.usuario = res.usuario;
+    state.nombre = res.nombre;
+    state.isAdmin = res.isAdmin;
 
-            document.getElementById("tabla-stats").innerHTML = Object.entries(st).map(([nom, s]) => `
-                <tr><td>${nom}</td><td>${s.f}</td><td>${s.fug}</td><td>${s.r}</td><td>${s.e}</td><td>${s.wa}</td></tr>
-            `).join('');
-        }
-    </script>
+    document.getElementById('navNombre').textContent = res.nombre;
+
+    // Mostrar menú Admin si aplica
+    if (state.isAdmin) {
+      document.getElementById('tabNovedades').classList.remove('hidden');
+    }
+
+    showScreen('appScreen');
+    await cargarDatosIniciales();
+
+  } catch (err) {
+    errEl.textContent = 'Error de conexión. Verifica la URL del script.';
+    errEl.style.display = 'block';
+  } finally {
+    showLoading(false);
+  }
+}
+
+function handleLogout() {
+  state.usuario = null;
+  state.nombre = null;
+  state.isAdmin = false;
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('tabNovedades').classList.add('hidden');
+  showScreen('loginScreen');
+  switchTab('asistencia');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// Permitir Enter en login
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ============================================================
+// CARGA INICIAL
+// ============================================================
+
+async function cargarDatosIniciales() {
+  showLoading(true);
+  try {
+    // Estudiantes
+    const r1 = await apiCall({ action: 'getStudents' });
+    if (r1.ok) state.estudiantes = r1.students;
+
+    // Citas de hoy (para bloqueo)
+    const r2 = await apiCall({ action: 'getCitas' });
+    if (r2.ok) state.citasHoy = r2.citas;
+
+    // Poblar selects
+    poblarSelectEstudiantes();
+    poblarSelectGrados();
+
+    // Cargar tab inicial
+    cargarPlanilla();
+
+  } catch (err) {
+    showToast('Error cargando datos: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function poblarSelectEstudiantes() {
+  const ids = ['citaEstudiante', 'novEstudiante'];
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+    state.estudiantes
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.nombre;
+        opt.textContent = `${e.nombre} (${e.grado})`;
+        sel.appendChild(opt);
+      });
+  });
+}
+
+function poblarSelectGrados() {
+  const grados = [...new Set(state.estudiantes.map(e => e.grado))].sort();
+  const sel = document.getElementById('asistGrado');
+  sel.innerHTML = '<option value="">-- Todos --</option>';
+  grados.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = g;
+    sel.appendChild(opt);
+  });
+}
+
+// ============================================================
+// NAVEGACIÓN DE TABS
+// ============================================================
+
+function switchTab(tab) {
+  ['asistencia', 'estadisticas', 'psicologia', 'novedades'].forEach(t => {
+    const content = document.getElementById(`${t}Tab`);
+    const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+    if (content) content.style.display = t === tab ? 'block' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+
+  if (tab === 'estadisticas') cargarEstadisticas();
+  if (tab === 'psicologia') cargarCitasPendientes();
+  if (tab === 'novedades') cargarNovedades();
+}
+
+// ============================================================
+// ASISTENCIA
+// ============================================================
+
+function cargarPlanilla() {
+  const fechaEl = document.getElementById('asistFecha');
+  if (!fechaEl.value) fechaEl.value = todayISO();
+  filtrarEstudiantes();
+}
+
+function filtrarEstudiantes() {
+  const grado = document.getElementById('asistGrado').value.toLowerCase();
+  const buscar = document.getElementById('asistBuscar').value.toLowerCase();
+
+  const filtrados = state.estudiantes.filter(e => {
+    const matchGrado = !grado || e.grado.toLowerCase() === grado;
+    const matchBuscar = !buscar || e.nombre.toLowerCase().includes(buscar);
+    return matchGrado && matchBuscar;
+  }).sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  renderPlanilla(filtrados);
+}
+
+const HORAS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
+const ESTADOS = [
+  { value: 'Asistió', label: '✓ Asistió',      css: 'estado-asistio' },
+  { value: 'Falla',   label: '✗ Falla',         css: 'estado-falla' },
+  { value: 'Excusa',  label: '📋 Excusa',        css: 'estado-excusa' },
+  { value: 'Fuga',    label: '🏃 Fuga',          css: 'estado-fuga' },
+  { value: 'Retardo', label: '⏱ Retardo',        css: 'estado-retardo' },
+  { value: 'Cita Psico', label: '🧠 Cita Psico', css: 'estado-psico' }
+];
+
+function estadoCSSClass(val) {
+  const e = ESTADOS.find(e => e.value === val);
+  return e ? e.css : '';
+}
+
+function renderPlanilla(estudiantes) {
+  const tbody = document.getElementById('asisBody');
+  if (!estudiantes || estudiantes.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-2)">
+      No hay estudiantes para mostrar. Verifica el grado seleccionado.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = '';
+  estudiantes.forEach(est => {
+    const tr = document.createElement('tr');
+
+    // Nombre + grado
+    const tdNombre = document.createElement('td');
+    tdNombre.innerHTML = `${est.nombre}<span class="grado-badge">${est.grado}</span>`;
+    tr.appendChild(tdNombre);
+
+    // Horas H1-H6
+    HORAS.forEach(hora => {
+      const td = document.createElement('td');
+
+      // Verificar si hay cita psico hoy en esta hora
+      const tieneCita = state.citasHoy.some(c =>
+        c.estudiante === est.nombre && c.hora === hora
+      );
+
+      const sel = document.createElement('select');
+      sel.className = 'estado-select estado-asistio';
+      sel.dataset.est = est.nombre;
+      sel.dataset.hora = hora;
+      sel.dataset.grado = est.grado;
+
+      if (tieneCita) {
+        // Bloquear con Cita Psico
+        const opt = document.createElement('option');
+        opt.value = 'Cita Psico';
+        opt.textContent = '🧠 Cita Psico';
+        sel.appendChild(opt);
+        sel.disabled = true;
+        sel.className = 'estado-select estado-psico';
+      } else {
+        ESTADOS.forEach(e => {
+          const opt = document.createElement('option');
+          opt.value = e.value;
+          opt.textContent = e.label;
+          sel.appendChild(opt);
+        });
+        sel.value = 'Asistió';
+        sel.addEventListener('change', function () {
+          this.className = 'estado-select ' + estadoCSSClass(this.value);
+        });
+      }
+
+      td.appendChild(sel);
+      tr.appendChild(td);
+    });
+
+    // Botón reporte
+    const tdRep = document.createElement('td');
+    const btnRep = document.createElement('button');
+    btnRep.className = 'btn-reporte-fila';
+    btnRep.innerHTML = '<i class="bi bi-flag"></i>';
+    btnRep.title = 'Reporte disciplinario';
+    btnRep.addEventListener('click', () => abrirModalReporte(est));
+    tdRep.appendChild(btnRep);
+    tr.appendChild(tdRep);
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function guardarAsistencia() {
+  const fecha = document.getElementById('asistFecha').value;
+  if (!fecha) { showToast('Selecciona una fecha.', 'warning'); return; }
+
+  const selects = document.querySelectorAll('#asisBody .estado-select');
+  if (selects.length === 0) { showToast('No hay planilla cargada.', 'warning'); return; }
+
+  const registros = [];
+  selects.forEach(sel => {
+    const estado = sel.value;
+    if (estado && estado !== 'Asistió') { // Solo guarda los distintos de Asistió (o cambia según preferencia)
+      registros.push({
+        fecha,
+        hora: sel.dataset.hora,
+        estudiante: sel.dataset.est,
+        grado: sel.dataset.grado,
+        estado,
+        docente: state.nombre
+      });
+    }
+    // Para guardar TODOS (incluyendo asistió), elimina el if y usa el push directamente:
+    // registros.push({ fecha, hora: sel.dataset.hora, estudiante: sel.dataset.est, grado: sel.dataset.grado, estado, docente: state.nombre });
+  });
+
+  if (registros.length === 0) {
+    showToast('No hay novedad que guardar (todos asistieron).', 'info');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res = await apiCall({ action: 'saveAsistencia', registros });
+    if (res.ok) showToast(res.msg, 'success');
+    else showToast(res.msg, 'error');
+  } catch (err) {
+    showToast('Error al guardar: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ============================================================
+// REPORTE DISCIPLINARIO
+// ============================================================
+
+let reporteEstActual = null;
+
+function abrirModalReporte(est) {
+  reporteEstActual = est;
+  document.getElementById('reporteEstNombre').textContent = est.nombre;
+  document.getElementById('reporteFalta').value = '';
+  document.getElementById('reporteObs').value = '';
+  document.getElementById('reporteWhatsapp').checked = true;
+  new bootstrap.Modal(document.getElementById('modalReporte')).show();
+}
+
+async function confirmarReporte() {
+  const falta    = document.getElementById('reporteFalta').value;
+  const obs      = document.getElementById('reporteObs').value.trim();
+  const enviarWA = document.getElementById('reporteWhatsapp').checked;
+
+  if (!falta) { showToast('Selecciona el tipo de falta.', 'warning'); return; }
+  if (!obs)   { showToast('Escribe las observaciones.', 'warning'); return; }
+
+  const est   = reporteEstActual;
+  const fecha = todayISO();
+
+  bootstrap.Modal.getInstance(document.getElementById('modalReporte')).hide();
+
+  // 1. Guardar en Google Sheets
+  showLoading(true);
+  try {
+    const res = await apiCall({
+      action:      'saveReporte',
+      fecha,
+      estudiante:  est.nombre,
+      acudiente:   est.acudiente,
+      telefono:    est.telefono,
+      falta,
+      observacion: obs,
+      docente:     state.nombre
+    });
+    if (res.ok) {
+      showToast('Reporte guardado correctamente.', 'success');
+    } else {
+      showToast('Error al guardar: ' + res.msg, 'error');
+    }
+  } catch (err) {
+    showToast('Error de conexion: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+
+  // 2. Abrir WhatsApp con el mensaje prellenado
+  if (enviarWA && est.telefono) {
+    const numero = est.telefono.toString().replace(/\D/g, '');
+    const msg =
+      '*Concentracion Educativa del Sur de Montelibano*\n\n' +
+      'Estimado/a acudiente de *' + est.nombre + '*,\n\n' +
+      'Le informamos que el dia *' + fecha + '* se registro la siguiente novedad disciplinaria:\n\n' +
+      'Falta: ' + falta + '\n' +
+      'Observacion: ' + obs + '\n\n' +
+      'Docente: ' + state.nombre + '\n\n' +
+      'Por favor comuniquese con la institucion.';
+    window.open('https://wa.me/57' + numero + '?text=' + encodeURIComponent(msg), '_blank');
+  }
+}
+
+// ============================================================
+// ESTADÍSTICAS
+// ============================================================
+
+async function cargarEstadisticas() {
+  showLoading(true);
+  try {
+    const res = await apiCall({ action: 'getEstadisticas' });
+    if (!res.ok) { showToast(res.msg, 'error'); return; }
+    renderEstadisticas(res.stats);
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderEstadisticas(stats) {
+  // Totales
+  const totFallas   = stats.reduce((a, s) => a + s.fallas, 0);
+  const totFugas    = stats.reduce((a, s) => a + s.fugas, 0);
+  const totRetardos = stats.reduce((a, s) => a + s.retardos, 0);
+  const totExcusas  = stats.reduce((a, s) => a + s.excusas, 0);
+  const totReportes = stats.reduce((a, s) => a + s.reportes, 0);
+
+  document.getElementById('statSummary').innerHTML = `
+    <div class="stat-summary-card">
+      <div class="num" style="color:var(--red)">${totFallas}</div>
+      <div class="lbl">Total Fallas</div>
+    </div>
+    <div class="stat-summary-card">
+      <div class="num" style="color:var(--text-3)">${totFugas}</div>
+      <div class="lbl">Total Fugas</div>
+    </div>
+    <div class="stat-summary-card">
+      <div class="num" style="color:var(--orange)">${totRetardos}</div>
+      <div class="lbl">Total Retardos</div>
+    </div>
+    <div class="stat-summary-card">
+      <div class="num" style="color:var(--accent-lt)">${totExcusas}</div>
+      <div class="lbl">Total Excusas</div>
+    </div>
+    <div class="stat-summary-card">
+      <div class="num" style="color:var(--green)">${totReportes}</div>
+      <div class="lbl">Reportes WA</div>
+    </div>
+  `;
+
+  const sorted = [...stats].sort((a, b) => (b.fallas + b.fugas) - (a.fallas + a.fugas));
+
+  const tbody = document.getElementById('statBody');
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-2)">Sin datos de inasistencia.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(s => {
+    const cl = (v, type) => {
+      if (v === 0) return `<td><span class="stat-val zero">0</span></td>`;
+      return `<td><span class="stat-val ${type}">${v}</span></td>`;
+    };
+    return `<tr>
+      <td style="font-weight:500">${s.nombre}</td>
+      <td><span class="grado-badge">${s.grado}</span></td>
+      ${cl(s.fallas, 'danger')}
+      ${cl(s.fugas, 'muted')}
+      ${cl(s.retardos, 'warning')}
+      ${cl(s.excusas, 'info')}
+      ${cl(s.reportes, 'purple')}
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// PSICOLOGÍA – AGENDAR CITA
+// ============================================================
+
+async function agendarCita() {
+  const estudiante = document.getElementById('citaEstudiante').value;
+  const fecha = document.getElementById('citaFecha').value;
+  const hora = document.getElementById('citaHora').value;
+  const motivo = document.getElementById('citaMotivo').value.trim();
+
+  if (!estudiante || !fecha || !hora || !motivo) {
+    showToast('Completa todos los campos.', 'warning');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res = await apiCall({
+      action: 'agendarCita',
+      estudiante, fecha, hora, motivo,
+      docente: state.nombre
+    });
+
+    if (res.ok) {
+      showToast('Cita agendada.', 'success');
+      // Abrir WhatsApp de citacion al acudiente
+      const estData = state.estudiantes.find(e => e.nombre === estudiante) || {};
+      if (estData.telefono) {
+        const numCita = estData.telefono.toString().replace(/\D/g, '');
+        const msgCita =
+          '*Concentraci\u00f3n Educativa del Sur de Montelibano*\n\n' +
+          'Estimado/a *' + (estData.acudiente || 'Acudiente') + '*, acudiente de *' + estudiante + '*,\n\n' +
+          'Se le cita a una reuni\u00f3n con orientaci\u00f3n/coordinaci\u00f3n:\n\n' +
+          '\uD83D\uDCC5 Fecha: ' + fecha + '\n' +
+          '\u23F0 Hora: ' + hora + '\n' +
+          '\uD83D\uDCCB Motivo: ' + motivo + '\n\n' +
+          'Por favor confirme su asistencia.';
+        window.open('https://wa.me/57' + numCita + '?text=' + encodeURIComponent(msgCita), '_blank');
+      }
+      // Limpiar
+      document.getElementById('citaEstudiante').value = '';
+      document.getElementById('citaFecha').value = '';
+      document.getElementById('citaMotivo').value = '';
+      // Recargar
+      await cargarCitasPendientes();
+      // Recargar citas de hoy para el bloqueo
+      const r2 = await apiCall({ action: 'getCitas' });
+      if (r2.ok) state.citasHoy = r2.citas;
+    } else {
+      showToast(res.msg, 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ============================================================
+// PSICOLOGÍA – CITAS PENDIENTES
+// ============================================================
+
+async function cargarCitasPendientes() {
+  const grid = document.getElementById('citasGrid');
+  grid.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const res = await apiCall({ action: 'getCitasPendientes' });
+    if (!res.ok) { grid.innerHTML = `<p style="color:var(--red)">${res.msg}</p>`; return; }
+    renderCitasGrid(res.citas);
+  } catch (err) {
+    grid.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
+  }
+}
+
+function renderCitasGrid(citas) {
+  const grid = document.getElementById('citasGrid');
+  if (!citas || citas.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-2);font-size:.85rem;padding:.5rem">No hay citas pendientes.</p>';
+    return;
+  }
+
+  grid.innerHTML = citas.map(c => {
+    const fecha = formatDate(c.fecha);
+    return `<div class="cita-card" onclick="abrirDescargos(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+      <span class="cita-estado">Pendiente</span>
+      <div class="cita-nombre"><i class="bi bi-person-fill" style="color:var(--purple)"></i> ${c.estudiante}</div>
+      <div class="cita-meta"><i class="bi bi-calendar3"></i> ${fecha}</div>
+      <div class="cita-meta"><i class="bi bi-clock"></i> ${c.hora}</div>
+      <div class="cita-meta"><i class="bi bi-chat-text"></i> ${c.motivo || '–'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// PSICOLOGÍA – DESCARGOS
+// ============================================================
+
+function abrirDescargos(cita) {
+  document.getElementById('descargosEst').value = cita.estudiante;
+  document.getElementById('descargosFecha').value = formatDate(cita.fecha);
+  document.getElementById('descargosHora').value = cita.hora;
+  document.getElementById('descargosInforme').value = '';
+  document.getElementById('descargosCompromisos').value = '';
+  document.getElementById('descargosAcudiente').value = 'Sí';
+  document.getElementById('descargosIdCita').value = cita.id_cita;
+  new bootstrap.Modal(document.getElementById('modalDescargos')).show();
+}
+
+async function completarCita() {
+  const id_cita = document.getElementById('descargosIdCita').value;
+  const acudiente_asiste = document.getElementById('descargosAcudiente').value;
+  const informe = document.getElementById('descargosInforme').value.trim();
+  const compromisos = document.getElementById('descargosCompromisos').value.trim();
+
+  if (!informe || !compromisos) {
+    showToast('Completa el informe y los compromisos.', 'warning');
+    return;
+  }
+
+  bootstrap.Modal.getInstance(document.getElementById('modalDescargos')).hide();
+  showLoading(true);
+  try {
+    const res = await apiCall({ action: 'completarCita', id_cita, acudiente_asiste, informe, compromisos });
+    if (res.ok) {
+      showToast('Cita completada y guardada.', 'success');
+      await cargarCitasPendientes();
+    } else {
+      showToast(res.msg, 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ============================================================
+// PSICOLOGÍA – ACTA PDF
+// ============================================================
+
+function generarActa() {
+  const estudiante  = document.getElementById('descargosEst').value;
+  const fecha       = document.getElementById('descargosFecha').value;
+  const hora        = document.getElementById('descargosHora').value;
+  const acudiente_asiste = document.getElementById('descargosAcudiente').value;
+  const informe     = document.getElementById('descargosInforme').value;
+  const compromisos = document.getElementById('descargosCompromisos').value;
+
+  // Buscar nombre del acudiente
+  const est = state.estudiantes.find(e => e.nombre === estudiante) || {};
+  const hoy = new Date();
+  const fechaLarga = hoy.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const actaHTML = `
+    <h2>Concentración Educativa del Sur de Montelíbano</h2>
+    <div class="acta-subtitulo">ACTA DE ORIENTACIÓN / COORDINACIÓN</div>
+    <div class="acta-datos">
+      <p><strong>Fecha:</strong> ${fechaLarga}</p>
+      <p><strong>Estudiante:</strong> ${estudiante}</p>
+      <p><strong>Acudiente:</strong> ${est.acudiente || '–'}</p>
+      <p><strong>Hora de cita:</strong> ${hora}</p>
+      <p><strong>Fecha de cita:</strong> ${fecha}</p>
+      <p><strong>Acudiente presente:</strong> ${acudiente_asiste}</p>
+      <p><strong>Docente/Orientador:</strong> ${state.nombre}</p>
+    </div>
+    <hr>
+    <p><strong>INFORME / DIAGNÓSTICO:</strong></p>
+    <p style="margin:1rem 0;text-align:justify">${informe.replace(/\n/g, '<br>')}</p>
+    <hr>
+    <p><strong>COMPROMISOS ADQUIRIDOS:</strong></p>
+    <p style="margin:1rem 0;text-align:justify">${compromisos.replace(/\n/g, '<br>')}</p>
+    <div class="acta-firmas">
+      <div class="firma-linea">
+        <p><strong>${state.nombre}</strong></p>
+        <p>Docente / Orientador</p>
+      </div>
+      <div class="firma-linea">
+        <p><strong>${est.acudiente || 'Acudiente'}</strong></p>
+        <p>Acudiente / Padre de Familia</p>
+      </div>
+      <div class="firma-linea">
+        <p><strong>${estudiante}</strong></p>
+        <p>Estudiante</p>
+      </div>
+    </div>
+  `;
+
+  const container = document.getElementById('actaContainer');
+  container.innerHTML = actaHTML;
+  container.style.display = 'block';
+
+  const opt = {
+    margin: [10, 10],
+    filename: `Acta_${estudiante.replace(/\s+/g,'_')}_${fecha}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(container).save().then(() => {
+    container.style.display = 'none';
+    showToast('Acta PDF generada.', 'success');
+  });
+}
+
+// ============================================================
+// NOVEDADES (Admin)
+// ============================================================
+
+async function cargarNovedades() {
+  const lista = document.getElementById('novedadesLista');
+  lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Cargando...</p>';
+  try {
+    const res = await apiCall({ action: 'getNovedades' });
+    if (!res.ok) { lista.innerHTML = `<p style="color:var(--red)">${res.msg}</p>`; return; }
+    renderNovedades(res.novedades);
+  } catch (err) {
+    lista.innerHTML = `<p style="color:var(--red)">Error: ${err.message}</p>`;
+  }
+}
+
+function renderNovedades(novedades) {
+  const lista = document.getElementById('novedadesLista');
+  if (!novedades || novedades.length === 0) {
+    lista.innerHTML = '<p style="color:var(--text-2);font-size:.85rem">Sin novedades registradas.</p>';
+    return;
+  }
+
+  const header = `<div class="novedad-row" style="color:var(--text-2);font-size:.75rem;text-transform:uppercase;font-weight:600;border-bottom:2px solid var(--border)">
+    <div>Estudiante / Motivo</div>
+    <div>Inicio</div>
+    <div>Fin</div>
+    <div>Estado</div>
+  </div>`;
+
+  const rows = novedades.slice().reverse().map(n => {
+    const estadoCls = (n.estado || '').toLowerCase();
+    const badgeCls = estadoCls === 'activa' ? 'activa' : estadoCls === 'pendiente' ? 'pendiente' : 'inactiva';
+    return `<div class="novedad-row">
+      <div>
+        <div style="font-weight:500;color:var(--text-1)">${n.estudiante}</div>
+        <div style="font-size:.78rem;color:var(--text-2)">${n.motivo || ''}</div>
+        <div style="font-size:.72rem;color:var(--text-3)">${n.docente || ''}</div>
+      </div>
+      <div style="font-size:.82rem;color:var(--text-2)">${formatDate(n.inicio)}</div>
+      <div style="font-size:.82rem;color:var(--text-2)">${formatDate(n.fin)}</div>
+      <div><span class="novedad-badge ${badgeCls}">${n.estado || '–'}</span></div>
+    </div>`;
+  }).join('');
+
+  lista.innerHTML = header + rows;
+}
+
+async function guardarNovedad() {
+  const estudiante = document.getElementById('novEstudiante').value;
+  const inicio = document.getElementById('novInicio').value;
+  const fin = document.getElementById('novFin').value;
+  const estado = document.getElementById('novEstado').value;
+  const motivo = document.getElementById('novMotivo').value.trim();
+
+  if (!estudiante || !inicio || !motivo) {
+    showToast('Completa: Estudiante, Inicio y Motivo.', 'warning');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res = await apiCall({
+      action: 'saveNovedad',
+      fecha_reg: todayISO(),
+      estudiante, inicio, fin, estado, motivo,
+      docente: state.nombre
+    });
+    if (res.ok) {
+      showToast('Novedad guardada.', 'success');
+      document.getElementById('novEstudiante').value = '';
+      document.getElementById('novInicio').value = '';
+      document.getElementById('novFin').value = '';
+      document.getElementById('novMotivo').value = '';
+      await cargarNovedades();
+    } else {
+      showToast(res.msg, 'error');
+    }
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ============================================================
+// INICIALIZACIÓN
+// ============================================================
+
+// Setear fecha por defecto en inputs de fecha
+document.getElementById('asistFecha').value = todayISO();
+document.getElementById('citaFecha').value = todayISO();
+</script>
 </body>
 </html>
