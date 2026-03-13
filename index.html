@@ -3,59 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGA - Sistema de Gestión Académica</title>
+    <title>SGA - CESUM Montelíbano</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root {
-            --psico-color: #6f42c1;
-            --fuga-color: #212529;
-            --retardo-color: #fd7e14;
-        }
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; }
+        :root { --psico: #6f42c1; --fuga: #212529; --retardo: #fd7e14; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
         .hidden { display: none !important; }
-        .table-responsive { max-height: 70vh; overflow-y: auto; }
-        thead th { position: sticky; top: 0; z-index: 10; background-color: #212529 !important; color: white; }
-        
-        /* Estilos de etiquetas de asistencia */
-        .badge-asist { width: 100%; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; border: 1px solid transparent; }
-        .color-asistio { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
-        .color-falla { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
-        .color-excusa { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
+        .badge-asist { width: 100%; font-weight: bold; font-size: 0.8rem; border-radius: 4px; padding: 4px; }
+        .color-asistio { background-color: #d1e7dd; color: #0f5132; }
+        .color-falla { background-color: #f8d7da; color: #842029; }
+        .color-excusa { background-color: #cff4fc; color: #055160; }
         .color-fuga { background-color: #212529; color: #ffffff; }
-        .color-retardo { background-color: #fff3cd; color: #664d03; border-color: #ffecb5; }
-        .color-suspension { background-color: #f8d7da; color: #842029; border: 2px solid #842029; }
-        .color-citapsico { background-color: #e0cffc; color: #3d0a91; border: 2px dashed var(--psico-color); }
-
-        /* Leyendas */
-        .legend-item { display: inline-flex; align-items: center; margin-right: 15px; font-size: 0.85rem; font-weight: 500; }
-        .dot { width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; }
-        
-        .btn-wa { background-color: #25D366; color: white; border: none; }
-        .btn-wa:hover { background-color: #128C7E; color: white; }
-        .nav-link { cursor: pointer; font-weight: 500; }
-        .badge-novedad { font-size: 0.75rem; white-space: normal; text-align: left; display: block; margin-top: 4px; }
-
-        /* Estilo para el PDF (Oculto en web) */
-        #pdf-template { padding: 40px; color: #000; background: white; }
-        .pdf-header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; text-align: center; }
+        .color-retardo { background-color: #fff3cd; color: #664d03; }
+        .color-citapsico { background-color: #e0cffc; color: #3d0a91; border: 2px dashed var(--psico); }
+        thead th { position: sticky; top: 0; background: #212529 !important; color: white; z-index: 10; }
+        .pdf-only { display: none; }
     </style>
 </head>
 <body>
 
-    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow-sm sticky-top">
+    <nav id="main-nav" class="navbar navbar-expand-lg navbar-dark bg-dark hidden shadow sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#"><i class="fas fa-shield-halved me-2"></i>SGA INSTITUCIONAL</a>
+            <a class="navbar-brand fw-bold" href="#">CESUM - GESTIÓN ESCOLAR</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link active" id="tab-asistencia" onclick="cambiarVista('asistencia')">Asistencia</a></li>
                     <li class="nav-item"><a class="nav-link" id="tab-psico" onclick="cambiarVista('psico')">Psicología / Coord.</a></li>
                     <li class="nav-item"><a class="nav-link" id="tab-estadisticas" onclick="cambiarVista('estadisticas')">Estadísticas</a></li>
-                    <li class="nav-item hidden" id="nav-admin"><a class="nav-link text-warning fw-bold" id="tab-admin" onclick="cambiarVista('admin')">Novedades Admin</a></li>
                 </ul>
                 <span class="navbar-text me-3 text-white fw-bold" id="welcome-message"></span>
-                <button onclick="location.reload()" class="btn btn-sm btn-outline-light"><i class="fas fa-sign-out-alt"></i> Salir</button>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-danger">Salir</button>
             </div>
         </div>
     </nav>
@@ -65,112 +44,64 @@
             <div class="col-md-4">
                 <div class="card shadow border-0">
                     <div class="card-body p-4 text-center">
-                        <i class="fas fa-user-circle fa-4x text-primary mb-3"></i>
                         <h4 class="mb-4">Acceso Institucional</h4>
                         <input type="text" id="username" class="form-control mb-3" placeholder="Usuario">
                         <input type="password" id="password" class="form-control mb-3" placeholder="Contraseña">
-                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 py-2 fw-bold">Entrar</button>
+                        <button onclick="iniciarSesion()" class="btn btn-primary w-100 fw-bold">Entrar</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="asistencia-section" class="container-fluid mt-4 hidden">
-        <div class="card shadow-sm mb-3 border-0">
-            <div class="card-body py-2 d-flex flex-wrap align-items-center justify-content-between">
-                <div class="d-flex flex-wrap">
-                    <div class="legend-item"><div class="dot color-asistio"></div> Asistió</div>
-                    <div class="legend-item"><div class="dot color-falla"></div> Falla</div>
-                    <div class="legend-item"><div class="dot color-excusa"></div> Excusa</div>
-                    <div class="legend-item"><div class="dot color-fuga"></div> Fuga</div>
-                    <div class="legend-item"><div class="dot color-retardo"></div> Retardo</div>
-                    <div class="legend-item"><div class="dot color-citapsico"></div> Cita Psico</div>
-                </div>
-                <div class="d-flex gap-2">
+    <div id="asistencia-section" class="container-fluid mt-3 hidden">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div class="small text-muted">✓ Asistió | Falla | Excusa | Fuga | Retardo</div>
+                <div class="d-flex">
                     <select id="filtro-grado" class="form-select form-select-sm" onchange="renderizarTabla()" style="width: 200px;"></select>
-                    <button onclick="cargarDatos()" class="btn btn-sm btn-secondary"><i class="fas fa-sync-alt"></i></button>
+                    <button onclick="cargarDatos()" class="btn btn-sm btn-secondary ms-2"><i class="fas fa-sync"></i></button>
                 </div>
             </div>
         </div>
-
-        <div class="card shadow border-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 280px;">Estudiante</th>
-                            <th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th>
-                            <th class="text-center">Reporte</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-estudiantes"></tbody>
-                </table>
-            </div>
+        <div class="card shadow-sm border-0 table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr><th>Estudiante</th><th>H1</th><th>H2</th><th>H3</th><th>H4</th><th>H5</th><th>H6</th><th class="text-center">Reporte</th></tr>
+                </thead>
+                <tbody id="tabla-estudiantes"></tbody>
+            </table>
         </div>
     </div>
 
     <div id="psico-section" class="container mt-4 hidden">
         <div class="row">
-            <div class="col-md-5">
-                <div class="card shadow-sm mb-4 border-0">
-                    <div class="card-header bg-primary text-white fw-bold"><i class="fas fa-calendar-check me-2"></i>Nueva Citación / Seguimiento</div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-primary text-white fw-bold">Citar Estudiante</div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Estudiante:</label>
-                            <input class="form-control" list="datalist-estudiantes" id="psico-estudiante" placeholder="Buscar estudiante...">
-                        </div>
-                        <div class="row mb-3">
+                        <input class="form-control mb-2" list="datalist-estudiantes" id="p-est" placeholder="Buscar Estudiante...">
+                        <div class="row">
+                            <div class="col-6"><input type="date" id="p-fecha" class="form-control mb-2"></div>
                             <div class="col-6">
-                                <label class="form-label fw-bold small">Fecha Cita:</label>
-                                <input type="date" id="psico-fecha" class="form-control">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label fw-bold small">Hora Clase:</label>
-                                <select id="psico-hora" class="form-select">
+                                <select id="p-hora" class="form-select mb-2">
                                     <option value="H1">H1</option><option value="H2">H2</option><option value="H3">H3</option>
                                     <option value="H4">H4</option><option value="H5">H5</option><option value="H6">H6</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Motivo / Tipo de Cita:</label>
-                            <select id="psico-motivo-tipo" class="form-select">
-                                <option value="Psicología">Psicología</option>
-                                <option value="Coordinación">Coordinación</option>
-                                <option value="Comité Escolar">Comité Escolar</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Detalle del Informe:</label>
-                            <textarea id="psico-informe" class="form-control" rows="2" placeholder="Describa el porqué de la citación..."></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Compromisos Adquiridos:</label>
-                            <textarea id="psico-compromisos" class="form-control" rows="2" placeholder="Escriba los acuerdos pactados..."></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Acudiente que asistió:</label>
-                            <input type="text" id="psico-acudiente-nombre" class="form-control" placeholder="Nombre completo del acudiente">
-                        </div>
-                        <button onclick="guardarCitacion()" class="btn btn-success w-100 fw-bold">
-                            <i class="fab fa-whatsapp me-2"></i>Agendar y Notificar
-                        </button>
+                        <textarea id="p-motivo" class="form-control mb-3" placeholder="Motivo de la cita..."></textarea>
+                        <button onclick="agendarCita()" class="btn btn-success w-100 fw-bold">Agendar y Notificar WA</button>
                     </div>
                 </div>
             </div>
-            <div class="col-md-7">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <span class="fw-bold"><i class="fas fa-history me-2"></i>Historial de Citaciones</span>
-                        <button onclick="generarPDFHistorial()" class="btn btn-sm btn-outline-light"><i class="fas fa-file-pdf me-1"></i>Exportar PDF por Alumno</button>
-                    </div>
-                    <div class="table-responsive" style="max-height: 500px;">
-                        <table class="table table-sm table-striped align-middle">
-                            <thead class="table-light">
-                                <tr><th>Estudiante</th><th>Fecha/Hora</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr>
-                            </thead>
-                            <tbody id="tabla-citaciones"></tbody>
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-dark text-white fw-bold">Citaciones Pendientes</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead><tr><th>Estudiante</th><th>Fecha</th><th>Hora</th><th>Acción</th></tr></thead>
+                            <tbody id="lista-pendientes"></tbody>
                         </table>
                     </div>
                 </div>
@@ -179,69 +110,79 @@
     </div>
 
     <div id="estadisticas-section" class="container mt-4 hidden">
-        <h3 class="mb-4 text-primary fw-bold">Análisis de Datos Escolar</h3>
-        <button onclick="procesarEstadisticas()" class="btn btn-primary mb-4" id="btn-stats"><i class="fas fa-calculator me-2"></i>Calcular Métricas</button>
-        <div id="contenedor-stats"></div>
-    </div>
-
-    <div id="admin-section" class="container mt-4 hidden">
-        <div class="row justify-content-center"><div class="col-md-8"><div class="card shadow border-warning"><div class="card-header bg-warning fw-bold">Novedades Administrativas</div><div class="card-body" id="form-admin-body">
-            <div class="mb-3"><label class="form-label fw-bold">Estudiante:</label><input class="form-control" list="datalist-estudiantes" id="admin-estudiante"></div>
-            <div class="row mb-3"><div class="col-6"><label class="form-label fw-bold">Inicio:</label><input type="date" id="admin-inicio" class="form-control"></div><div class="col-6"><label class="form-label fw-bold">Fin:</label><input type="date" id="admin-fin" class="form-control"></div></div>
-            <div class="row mb-3">
-                <div class="col-6"><label class="form-label fw-bold">Estado:</label><select id="admin-estado" class="form-select"><option value="Excusa">Excusa</option><option value="Falla">Falla</option><option value="Suspensión">Suspensión</option></select></div>
-                <div class="col-6"><label class="form-label fw-bold">Motivo:</label><select id="admin-motivo" class="form-select"><option value="Médica">Médica</option><option value="Psicología">Psicología</option><option value="Deportivo">Deportivo</option><option value="Otro">Otro</option></select></div>
-            </div>
-            <button onclick="guardarNovedadAdmin()" class="btn btn-warning w-100 fw-bold">Guardar Novedad</button>
-        </div></div></div></div>
-    </div>
-
-    <div id="pdf-container" class="hidden">
-        <div id="pdf-template">
-            <div class="pdf-header">
-                <h2>INSTITUCIÓN EDUCATIVA SGA</h2>
-                <h4>HISTORIAL DE SEGUIMIENTO PSICOPEDAGÓGICO</h4>
-                <p>Generado el: <span id="pdf-fecha-gen"></span></p>
-            </div>
-            <div class="mb-4">
-                <p><strong>Estudiante:</strong> <span id="pdf-estudiante-nom"></span></p>
-                <p><strong>Grado:</strong> <span id="pdf-estudiante-grado"></span></p>
-            </div>
-            <table class="table table-bordered border-dark">
-                <thead>
-                    <tr class="table-secondary">
-                        <th>Fecha</th><th>Hora</th><th>Motivo</th><th>Compromisos</th><th>Acudiente</th>
-                    </tr>
-                </thead>
-                <tbody id="pdf-tabla-body"></tbody>
+        <button onclick="generarEstadisticas()" class="btn btn-primary mb-4" id="btn-calc"><i class="fas fa-calculator me-2"></i>Calcular Métricas</button>
+        <div class="row" id="stats-cards"></div>
+        <div class="card shadow-sm border-0 mt-3">
+            <table class="table table-hover text-center">
+                <thead class="table-light"><tr><th>Estudiante</th><th>Fallas</th><th>Fugas</th><th>Retardos</th><th>Excusas</th><th>Alertas WA</th></tr></thead>
+                <tbody id="tabla-stats"></tbody>
             </table>
-            <div class="mt-5 pt-5 row text-center">
-                <div class="col-6"><hr class="mx-auto w-75"><p>Firma Psicología / Coordinación</p></div>
-                <div class="col-6"><hr class="mx-auto w-75"><p>Firma Acudiente</p></div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalPsico" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white"><h5>Descargos y Compromisos</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p>Estudiante: <strong id="desc-nom"></strong></p>
+                    <input type="hidden" id="desc-id">
+                    <label class="fw-bold small">Acudiente presente:</label>
+                    <input type="text" id="desc-acu" class="form-control mb-2">
+                    <label class="fw-bold small">Informe de la cita:</label>
+                    <textarea id="desc-inf" class="form-control mb-2" rows="3"></textarea>
+                    <label class="fw-bold small">Compromisos adquiridos:</label>
+                    <textarea id="desc-com" class="form-control mb-3" rows="3"></textarea>
+                    <button onclick="guardarDescargos()" class="btn btn-primary w-100 mb-2">Guardar en Base de Datos</button>
+                    <button onclick="exportarPDF()" class="btn btn-outline-danger w-100">Generar Acta PDF para Firma</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="modalReporte" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
-            <div class="modal-header bg-warning"><h5><i class="fas fa-bullhorn me-2"></i>Reporte Docente</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <p>Estudiante: <strong id="modal-nombre-estudiante"></strong></p>
-                <select id="modal-falta" class="form-select mb-3">
-                    <option value="Desorden en clase">Desorden en clase</option>
-                    <option value="No trajo material">No trajo material</option>
-                    <option value="Retardo">Retardo (Llegada tarde)</option>
-                    <option value="Fuga de clase">Fuga de clase</option>
-                </select>
-                <textarea id="modal-observacion" class="form-control" rows="3" placeholder="Observaciones..."></textarea>
+    <div class="modal fade" id="modalWA" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning"><h5>Reportar a Acudiente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p>Estudiante: <strong id="wa-nom"></strong></p>
+                    <select id="wa-falta" class="form-select mb-3">
+                        <option value="Llegada tarde">Llegada tarde</option>
+                        <option value="Desorden en clase">Desorden en clase</option>
+                        <option value="No trajo materiales">No trajo materiales</option>
+                        <option value="Fuga detectada">Fuga detectada</option>
+                        <option value="Incumplimiento de uniforme">Incumplimiento de uniforme</option>
+                    </select>
+                    <textarea id="wa-obs" class="form-control mb-3" placeholder="Observaciones adicionales..."></textarea>
+                    <button onclick="confirmarReporteWA()" class="btn btn-success w-100">Enviar WhatsApp</button>
+                </div>
             </div>
-            <div class="modal-footer"><button onclick="enviarWhatsApp()" class="btn btn-success w-100 fw-bold">Enviar a Acudiente</button></div>
-        </div></div>
+        </div>
     </div>
 
+    <div id="pdf-area" class="pdf-only" style="padding: 40px; font-family: Arial;">
+        <div style="text-align:center; border-bottom: 2px solid #000; margin-bottom: 20px;">
+            <h3>CONCENTRACIÓN EDUCATIVA DEL SUR DE MONTELÍBANO</h3>
+            <h4>ACTA DE COMPROMISO PSICOPEDAGÓGICO / DISCIPLINARIO</h4>
+        </div>
+        <p><strong>Fecha:</strong> <span id="pdf-fecha"></span></p>
+        <p><strong>Estudiante:</strong> <span id="pdf-est"></span></p>
+        <p><strong>Acudiente Presente:</strong> <span id="pdf-acu"></span></p>
+        <hr>
+        <h5>INFORME DE LA SITUACIÓN:</h5>
+        <p id="pdf-inf" style="text-align: justify;"></p>
+        <h5>COMPROMISOS ADQUIRIDOS:</h5>
+        <p id="pdf-com" style="text-align: justify; border: 1px solid #ccc; padding: 10px;"></p>
+        <div style="margin-top: 80px; display: flex; justify-content: space-between;">
+            <div style="width: 200px; border-top: 1px solid #000; text-align: center;">Firma Institución</div>
+            <div style="width: 200px; border-top: 1px solid #000; text-align: center;">Firma Acudiente</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec";
-        let nombreDocenteActual = "", esUsuarioEspecial = false, listaEstudiantes = [], listaNovedades = [], listaCitaciones = [];
+        const API_URL = "https://script.google.com/macros/s/TU_NUEVA_URL_AQUI/exec";
+        let userDocente = "", listaEstudiantes = [], listaNovedades = [], listaCitaciones = [];
 
         async function fetchAPI(datos) {
             const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(datos) });
@@ -250,47 +191,41 @@
 
         async function iniciarSesion() {
             const u = document.getElementById("username").value, p = document.getElementById("password").value;
-            if(!u || !p) return alert("Completa los campos.");
             const res = await fetchAPI({ accion: "login", usuario: u, password: p });
             if (res.exito) {
-                nombreDocenteActual = res.nombreDocente;
-                esUsuarioEspecial = p.startsWith('@');
-                if(esUsuarioEspecial) document.getElementById("nav-admin").classList.remove("hidden");
+                userDocente = res.nombreDocente;
                 document.getElementById("login-section").classList.add("hidden");
                 document.getElementById("main-nav").classList.remove("hidden");
-                document.getElementById("welcome-message").innerText = (esUsuarioEspecial ? "👑 " : "Prof. ") + nombreDocenteActual;
+                document.getElementById("welcome-message").innerText = userDocente;
                 cambiarVista('asistencia');
                 cargarDatos();
-            } else alert("Credenciales incorrectas");
+            } else alert("Error de acceso");
         }
 
         async function cargarDatos() {
             const res = await fetchAPI({ accion: "obtenerDatosIniciales" });
-            if (res.exito) {
-                listaEstudiantes = res.estudiantes;
-                listaNovedades = res.novedades;
-                listaCitaciones = res.citaciones;
-                llenarFiltros();
-                renderizarTabla();
-                renderizarCitaciones();
-            }
+            listaEstudiantes = res.estudiantes;
+            listaNovedades = res.novedades;
+            listaCitaciones = res.citaciones;
+            llenarFiltros();
+            renderizarTabla();
+            renderizarPendientes();
         }
 
         function cambiarVista(v) {
-            ['asistencia', 'psico', 'estadisticas', 'admin'].forEach(x => {
-                document.getElementById(x + '-section')?.classList.add('hidden');
-                document.getElementById('tab-' + x)?.classList.remove('active');
-            });
+            ['asistencia', 'psico', 'estadisticas'].forEach(x => document.getElementById(x + '-section').classList.add('hidden'));
             document.getElementById(v + '-section').classList.remove('hidden');
-            document.getElementById('tab-' + v).classList.add('active');
         }
 
         function llenarFiltros() {
+            const s = document.getElementById("filtro-grado");
             const g = [...new Set(listaEstudiantes.map(e => e.grado_new))].sort();
-            document.getElementById("filtro-grado").innerHTML = g.map(x => `<option value="${x}">${x}</option>`).join('');
-            let dl = document.getElementById("datalist-estudiantes");
-            if(!dl) { dl = document.createElement('datalist'); dl.id="datalist-estudiantes"; document.body.appendChild(dl); }
+            s.innerHTML = g.map(x => `<option value="${x}">${x}</option>`).join('');
+            
+            const dl = document.getElementById("datalist-estudiantes") || document.createElement('datalist');
+            dl.id = "datalist-estudiantes";
             dl.innerHTML = listaEstudiantes.map(e => `<option value="${e.nombre}">`).join('');
+            document.body.appendChild(dl);
         }
 
         function renderizarTabla() {
@@ -300,115 +235,105 @@
             tbody.innerHTML = "";
 
             listaEstudiantes.filter(e => e.grado_new == g).forEach(est => {
-                let nov = listaNovedades.find(n => n.estudiante === est.nombre && n.fechaInicio <= hoy && n.fechaFin >= hoy);
-                let fila = `<tr><td><div class="fw-bold">${est.nombre}</div>${nov ? `<span class="badge ${nov.estado=='Suspensión'?'bg-danger':'bg-info'} badge-novedad">${nov.estado}: ${nov.motivo}</span>`:''}</td>`;
-                
+                let fila = `<tr><td><div class="fw-bold">${est.nombre}</div></td>`;
                 for(let i=1; i<=6; i++) {
                     const h = "H" + i;
-                    const cita = listaCitaciones.find(c => c.estudiante == est.nombre && c.fecha_cita == hoy && c.tipo_cita == h);
-                    let def = nov ? nov.estado : (cita ? "Cita Psico" : "Asistió");
-                    fila += `<td><select class="form-select form-select-sm badge-asist color-${def.toLowerCase().replace(' ', '')}" onchange="marcar(this, '${est.nombre}', '${g}', '${h}')">
-                        <option value="Asistió" ${def=='Asistió'?'selected':''}>Asistió</option>
+                    const cita = listaCitaciones.find(c => c[1] == est.nombre && c[2] == hoy && c[3] == h);
+                    let def = cita ? "Cita Psico" : "Asistió";
+                    fila += `<td><select class="form-select form-select-sm badge-asist color-${def.toLowerCase().replace(' ', '')}" onchange="marcarAsist(this, '${est.nombre}', '${h}')">
+                        <option value="Asistió" ${def=='Asistió'?'selected':''}>✓</option>
                         <option value="Falla" ${def=='Falla'?'selected':''}>Falla</option>
                         <option value="Excusa" ${def=='Excusa'?'selected':''}>Excusa</option>
                         <option value="Fuga" ${def=='Fuga'?'selected':''}>Fuga</option>
                         <option value="Retardo" ${def=='Retardo'?'selected':''}>Retardo</option>
-                        <option value="Cita Psico" ${def=='Cita Psico'?'selected':''}>Cita Psico</option>
+                        <option value="Cita Psico" ${def=='Cita Psico'?'selected':''}>Psico</option>
                     </select></td>`;
                 }
-                fila += `<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="abrirR('${est.nombre}')"><i class="fas fa-bullhorn"></i></button></td></tr>`;
+                fila += `<td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="abrirWA('${est.nombre}')"><i class="fas fa-bullhorn"></i></button></td></tr>`;
                 tbody.innerHTML += fila;
             });
         }
 
-        function marcar(sel, est, g, h) {
+        function marcarAsist(sel, est, h) {
             sel.className = "form-select form-select-sm badge-asist color-" + sel.value.toLowerCase().replace(' ', '');
-            fetchAPI({ accion: "guardarAsistencia", datos: { fecha: new Date().toLocaleDateString('es-ES'), hora: h, estudiante: est, grado: g, estado: sel.value, docente: nombreDocenteActual } });
+            fetchAPI({ accion: "guardarAsistencia", datos: { fecha: new Date().toLocaleDateString('es-ES'), hora: h, estudiante: est, grado: document.getElementById("filtro-grado").value, estado: sel.value, docente: userDocente } });
         }
 
-        async function guardarCitacion() {
-            const d = {
-                estudiante: document.getElementById("psico-estudiante").value,
-                fecha_cita: document.getElementById("psico-fecha").value,
-                tipo_cita: document.getElementById("psico-hora").value,
-                motivo_citacion: document.getElementById("psico-motivo-tipo").value,
-                informe_cita: document.getElementById("psico-informe").value,
-                compromisos: document.getElementById("psico-compromisos").value,
-                acudiente_asiste: document.getElementById("psico-acudiente-nombre").value,
-                docente: nombreDocenteActual
-            };
-            if(!d.estudiante || !d.fecha_cita) return alert("Faltan datos.");
-            const res = await fetchAPI({ accion: "guardarCitacion", datos: d });
-            if(res.exito) {
-                const e = listaEstudiantes.find(x => x.nombre == d.estudiante);
-                const msg = `SGA Citación: Alumno ${d.estudiante}. Cita con ${d.motivo_citacion} el día ${d.fecha_cita} (${d.tipo_cita}). Acudiente citado: ${d.acudiente_asiste}.`;
-                window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-                cargarDatos();
-            }
+        // REPORTE WA
+        function abrirWA(nom) {
+            document.getElementById("wa-nom").innerText = nom;
+            new bootstrap.Modal(document.getElementById('modalWA')).show();
         }
 
-        function renderizarCitaciones() {
-            document.getElementById("tabla-citaciones").innerHTML = listaCitaciones.slice(-20).reverse().map(c => `
-                <tr><td><small>${c.estudiante}</small></td><td><small>${c.fecha_cita}</small></td><td><small>${c.motivo}</small></td><td><span class="badge ${c.estado=='Cumplida'?'bg-success':'bg-secondary'}">${c.estado}</span></td>
-                <td><button onclick="cerrarCita('${c.id_cita}')" class="btn btn-xs btn-outline-primary py-0 px-1"><i class="fas fa-check"></i></button></td></tr>
-            `).join('');
-        }
-
-        async function cerrarCita(id) {
-            if(confirm("¿Cerrar cita?")) {
-                await fetchAPI({ accion: "actualizarEstadoCita", datos: { id_cita: id, nuevo_estado: "Cumplida" } });
-                cargarDatos();
-            }
-        }
-
-        // --- FUNCIÓN GENERAR PDF ---
-        function generarPDFHistorial() {
-            const nombreBusqueda = prompt("Ingrese el nombre completo del estudiante para el reporte PDF:");
-            if(!nombreBusqueda) return;
-
-            const citasAlumno = listaCitaciones.filter(c => c.estudiante.toLowerCase().includes(nombreBusqueda.toLowerCase()));
-            const infoAlumno = listaEstudiantes.find(e => e.nombre.toLowerCase().includes(nombreBusqueda.toLowerCase()));
-
-            if(citasAlumno.length === 0) return alert("No hay citaciones registradas para este estudiante.");
-
-            // Llenar template
-            document.getElementById("pdf-fecha-gen").innerText = new Date().toLocaleDateString();
-            document.getElementById("pdf-estudiante-nom").innerText = infoAlumno.nombre;
-            document.getElementById("pdf-estudiante-grado").innerText = infoAlumno.grado_new;
-            
-            document.getElementById("pdf-tabla-body").innerHTML = citasAlumno.map(c => `
-                <tr>
-                    <td>${c.fecha_cita}</td>
-                    <td>${c.tipo_cita}</td>
-                    <td>${c.motivo}</td>
-                    <td>${c.compromisos}</td>
-                    <td>${c.acudiente}</td>
-                </tr>
-            `).join('');
-
-            const element = document.getElementById('pdf-template');
-            const opt = {
-                margin: 0.5,
-                filename: `Reporte_${infoAlumno.nombre.replace(/ /g,'_')}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            // Mostrar temporalmente para capturar, luego ocultar
-            document.getElementById("pdf-container").classList.remove("hidden");
-            html2pdf().set(opt).from(element).save().then(() => {
-                document.getElementById("pdf-container").classList.add("hidden");
-            });
-        }
-
-        function abrirR(n) { document.getElementById("modal-nombre-estudiante").innerText = n; new bootstrap.Modal(document.getElementById('modalReporte')).show(); }
-
-        function enviarWhatsApp() {
-            const n = document.getElementById("modal-nombre-estudiante").innerText, f = document.getElementById("modal-falta").value, o = document.getElementById("modal-observacion").value;
+        function confirmarReporteWA() {
+            const n = document.getElementById("wa-nom").innerText;
+            const f = document.getElementById("wa-falta").value;
+            const o = document.getElementById("wa-obs").value;
             const e = listaEstudiantes.find(x => x.nombre == n);
-            fetchAPI({ accion: "guardarReporte", datos: { fecha: new Date().toLocaleDateString(), estudiante: n, acudiente: e.acudiente, telefono: e.tel_acud, falta: f, observacion: o, docente: nombreDocenteActual } });
-            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent("Reporte: "+f+" de "+n+". "+o)}`, '_blank');
+            const msg = `SGA CESUM: Se reporta que ${n} presenta: ${f}. Obs: ${o}. Atentamente, ${userDocente}.`;
+            
+            fetchAPI({ accion: "guardarReporte", datos: { fecha: new Date().toLocaleDateString(), estudiante: n, acudiente: e.acudiente, telefono: e.tel_acud, falta: f, observacion: o, docente: userDocente } });
+            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // PSICO
+        async function agendarCita() {
+            const d = { estudiante: document.getElementById("p-est").value, fecha_cita: document.getElementById("p-fecha").value, hora: document.getElementById("p-hora").value, motivo: document.getElementById("p-motivo").value };
+            await fetchAPI({ accion: "guardarCitacion", datos: d });
+            const e = listaEstudiantes.find(x => x.nombre == d.estudiante);
+            const msg = `CITACIÓN CESUM: Se cita a ${d.estudiante} y acudiente para el día ${d.fecha_cita} (${d.hora}). Motivo: ${d.motivo}. Agradecemos puntualidad.`;
+            window.open(`https://wa.me/57${e.tel_acud.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+            cargarDatos();
+        }
+
+        function renderizarPendientes() {
+            document.getElementById("lista-pendientes").innerHTML = listaCitaciones.filter(c => c[8] == 'Pendiente').map(c => `
+                <tr><td>${c[1]}</td><td>${c[2]}</td><td>${c[3]}</td>
+                <td><button class="btn btn-xs btn-primary" onclick="abrirDescargos('${c[0]}','${c[1]}')">Realizar Descargos</button></td></tr>
+            `).join('');
+        }
+
+        function abrirDescargos(id, nom) {
+            document.getElementById("desc-id").value = id;
+            document.getElementById("desc-nom").innerText = nom;
+            new bootstrap.Modal(document.getElementById('modalPsico')).show();
+        }
+
+        async function guardarDescargos() {
+            const d = { id_cita: document.getElementById("desc-id").value, acudiente_asiste: document.getElementById("desc-acu").value, informe_cita: document.getElementById("desc-inf").value, compromisos: document.getElementById("desc-com").value };
+            await fetchAPI({ accion: "guardarDescargos", datos: d });
+            alert("Guardado con éxito");
+            cargarDatos();
+        }
+
+        function exportarPDF() {
+            document.getElementById("pdf-fecha").innerText = new Date().toLocaleDateString();
+            document.getElementById("pdf-est").innerText = document.getElementById("desc-nom").innerText;
+            document.getElementById("pdf-acu").innerText = document.getElementById("desc-acu").value;
+            document.getElementById("pdf-inf").innerText = document.getElementById("desc-inf").value;
+            document.getElementById("pdf-com").innerText = document.getElementById("desc-com").value;
+            
+            const opt = { margin: 1, filename: 'Acta_Compromiso.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(document.getElementById("pdf-area")).save();
+        }
+
+        // ESTADÍSTICAS
+        async function generarEstadisticas() {
+            const res = await fetchAPI({ accion: "obtenerEstadisticas" });
+            const asist = res.asistencias, reps = res.reportes;
+            let st = {};
+            asist.forEach(a => {
+                if(!st[a.estudiante]) st[a.estudiante] = { f:0, fug:0, r:0, e:0, wa:0, g:a.grado };
+                if(a.estado=='Falla') st[a.estudiante].f++;
+                if(a.estado=='Fuga') st[a.estudiante].fug++;
+                if(a.estado=='Retardo') st[a.estudiante].r++;
+                if(a.estado=='Excusa') st[a.estudiante].e++;
+            });
+            reps.forEach(r => { if(st[r.estudiante]) st[r.estudiante].wa++; });
+
+            document.getElementById("tabla-stats").innerHTML = Object.entries(st).map(([nom, s]) => `
+                <tr><td>${nom}</td><td>${s.f}</td><td>${s.fug}</td><td>${s.r}</td><td>${s.e}</td><td>${s.wa}</td></tr>
+            `).join('');
         }
     </script>
 </body>
