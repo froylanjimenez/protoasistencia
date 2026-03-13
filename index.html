@@ -1179,7 +1179,7 @@ body {
 // CONFIGURACIÓN
 // ============================================================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwZsadi1xu-TdHZ9RBbDstgqkdV4-aYqYATtquF8AziDofdMp8SGaongi7sIP8G9o1W/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxXumkFy6ybIBCFzzXcCIKfWY81RhppD3edyg2E2NJ9fSpiiaaSA-QcvpRpyp2i_8f4/exec';
 
 // ============================================================
 // ESTADO GLOBAL
@@ -1213,10 +1213,12 @@ function showToast(msg, type = 'success') {
 }
 
 async function apiCall(data) {
+  // Google Apps Script requiere 'text/plain' y redirect:'follow' para evitar error CORS
   const res = await fetch(API_URL, {
     method: 'POST',
     body: JSON.stringify(data),
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    redirect: 'follow'
   });
   return res.json();
 }
